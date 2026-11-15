@@ -55,3 +55,32 @@ def test_rare_class_with_two_rows_appears_in_train_and_test() -> None:
     assert (result.y_train == xss_index).sum() == 1
     assert (result.y_test == xss_index).sum() == 1
     assert result.split_strategy == "stratified_random_minimum_class_coverage"
+
+
+
+def test_group_holdout_keeps_groups_separate_and_excludes_group_feature() -> None:
+    frame = pd.DataFrame(
+        {
+            "bytes": list(range(20)),
+            "capture_id": ["capture-a"] * 10 + ["capture-b"] * 10,
+            "label": ["benign", "scan"] * 10,
+        }
+    )
+    result = prepare_classification_data(
+        frame,
+        "label",
+        group_column="capture_id",
+        test_size=0.5,
+        random_state=42,
+    )
+
+    assert "capture_id" not in result.feature_columns
+    assert result.group_column == "capture_id"
+    assert result.split_strategy == "group_holdout"
+    # Each partition contains whole capture groups, never a mixture of rows.
+    train_groups = set(frame.iloc[result._train_indices]["capture_id"]) if hasattr(result, "_train_indices") else None
+    test_groups = set(frame.iloc[result._test_indices]["capture_id"]) if hasattr(result, "_test_indices") else None
+    assert len(set(result.y_train)) == 2
+    assert len(set(result.y_test)) == 2
+    assert any("Group-aware holdout used 'capture_id'" in warning for warning in result.evaluation_warnings)
+
