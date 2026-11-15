@@ -92,7 +92,7 @@ async def classify_dataset(
             (
                 f"Group-aware holdout used '{prepared.group_column}', keeping matching group values together; this is only as reliable as the selected grouping field."
                 if prepared.group_column
-                else "Random row-level train/test split; not a capture-aware or chronological security evaluation. Select a genuine capture, session, or collection-period identifier to run a group-aware holdout."
+                else "This evaluation uses a row-level stratified random holdout. Related flows from the same capture or session may appear in both partitions, so the result is not capture-aware or chronological and may overestimate generalisation to unseen captures."
             ),
             (
                 "Group-aware holdout does not guarantee every class appears in both partitions; missing held-out classes are explicitly reported."
