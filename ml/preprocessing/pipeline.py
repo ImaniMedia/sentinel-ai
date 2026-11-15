@@ -34,6 +34,7 @@ class PreparedDataset:
     class_distribution: list[dict[str, Any]]
     split_strategy: str
     evaluation_warnings: list[str]
+    group_column: str | None
 
 
 def prepare_classification_data(
@@ -42,6 +43,7 @@ def prepare_classification_data(
     *,
     test_size: float = 0.2,
     random_state: int = 42,
+    group_column: str | None = None,
 ) -> PreparedDataset:
     """Split labelled tabular data, then fit transforms on training rows only.
 
@@ -71,7 +73,22 @@ def prepare_classification_data(
     if y_raw.nunique() < 2:
         raise ValueError("At least two distinct target classes are required")
 
-    X = data.drop(columns=[label_column])
+    if group_column is not None:
+        if group_column == label_column:
+            raise ValueError("The evaluation group column cannot be the label column")
+        if group_column not in data.columns:
+            raise ValueError(f"Evaluation group column '{group_column}' was not found")
+        group_values = data[group_column]
+        if group_values.isna().any() or group_values.astype(str).str.strip().eq("").any():
+            raise ValueError("Evaluation group column contains missing or blank values")
+        group_values = group_values.astype(str).to_numpy()
+    else:
+        group_values = None
+
+    feature_drop_columns = [label_column]
+    if group_column is not None:
+        feature_drop_columns.append(group_column)
+    X = data.drop(columns=feature_drop_columns)
     empty_columns = [str(c) for c in X.columns[X.isna().all()]]
     if empty_columns:
         X = X.drop(columns=empty_columns)
@@ -106,16 +123,42 @@ def prepare_classification_data(
     label_encoder = LabelEncoder()
     y = label_encoder.fit_transform(y_raw)
 
-    # Allocate test rows per class ourselves. sklearn's approximate stratified
-    # allocation can still assign zero test rows to a class with only two rows.
     counts = y_raw.value_counts().reindex(label_encoder.classes_, fill_value=0)
     n_test = int(np.ceil(len(y) * test_size))
     n_train = len(y) - n_test
-    can_stratify = bool(counts.min() >= 2 and n_test >= len(counts) and n_train >= len(counts))
-    split_strategy = "stratified_random_minimum_class_coverage"
     evaluation_warnings: list[str] = []
 
-    if can_stratify:
+    if group_values is not None:
+        from sklearn.model_selection import GroupShuffleSplit
+
+        if len(np.unique(group_values)) < 2:
+            raise ValueError("Evaluation group column must contain at least two distinct groups")
+        splitter = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=random_state)
+        train_indices, test_indices = next(splitter.split(X, y, groups=group_values))
+        X_train, X_test = X.iloc[train_indices], X.iloc[test_indices]
+        y_train, y_test = y[train_indices], y[test_indices]
+        train_groups = set(group_values[train_indices])
+        test_groups = set(group_values[test_indices])
+        if train_groups.intersection(test_groups):
+            raise RuntimeError("Group-aware split produced overlapping groups")
+        split_strategy = "group_holdout"
+        evaluation_warnings.append(
+            f"Group-aware holdout used '{group_column}'. Related rows sharing this value were kept in one partition; class coverage is not guaranteed."
+        )
+        missing_test = [str(label_encoder.classes_[i]) for i in range(len(label_encoder.classes_)) if not np.any(y_test == i)]
+        if missing_test:
+            evaluation_warnings.append(
+                "These classes are absent from the held-out groups and cannot be evaluated in this split: "
+                + ", ".join(missing_test)
+                + "."
+            )
+    else:
+        # Allocate test rows per class ourselves. sklearn's approximate stratified
+        # allocation can still assign zero test rows to a class with only two rows.
+        can_stratify = bool(counts.min() >= 2 and n_test >= len(counts) and n_train >= len(counts))
+        split_strategy = "stratified_random_minimum_class_coverage"
+
+    if group_values is None and can_stratify:
         rng = np.random.default_rng(random_state)
         ideal = counts.to_numpy(dtype=float) * test_size
         allocation = np.floor(ideal).astype(int)
@@ -154,7 +197,7 @@ def prepare_classification_data(
         rng.shuffle(train_indices)
         X_train, X_test = X.iloc[train_indices], X.iloc[test_indices]
         y_train, y_test = y[train_indices], y[test_indices]
-    else:
+    elif group_values is None:
         split_strategy = "random_unstratified_fallback"
         rare = [f"{name} ({int(count)})" for name, count in counts.items() if count < 2]
         if rare:
@@ -195,4 +238,5 @@ def prepare_classification_data(
         ],
         split_strategy=split_strategy,
         evaluation_warnings=evaluation_warnings,
+        group_column=group_column,
     )
