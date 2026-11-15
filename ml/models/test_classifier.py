@@ -23,3 +23,5 @@ def test_random_forest_returns_metrics_from_test_partition() -> None:
     assert len(metrics["confusion_matrix"]) == 2
     assert metrics["test_sample_count"] == len(prepared.y_test)
     assert set(np.unique(prepared.y_test)).issubset(set(model.classes_))
+    assert metrics["roc_auc_macro_ovr"] is not None
+    assert 0.0 <= metrics["roc_auc_macro_ovr"] <= 1.0
