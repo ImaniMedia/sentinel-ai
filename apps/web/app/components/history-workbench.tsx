@@ -102,6 +102,5 @@ export default function HistoryWorkbench({ mode }: { mode: "predictions" | "aler
       <p style={small}>Analysis #{item.analysis_id} · {item.flagged_count} flagged of {item.sample_count} scored · {new Date(item.created_at).toLocaleString()}</p>
       {item.status === "open" && <div style={{ display: "flex", gap: 8, marginTop: 12 }}><button style={button} onClick={() => void changeStatus(item.id, "reviewed")}>Mark reviewed</button><button style={button} onClick={() => void changeStatus(item.id, "dismissed")}>Dismiss</button></div>}
     </article>)}
-    <p style={{ ...small, marginTop: 14 }}>API: {API_BASE}. Records are local SQLite summaries; deploy with a persistent volume to retain them across restarts.</p>
   </section>;
 }
