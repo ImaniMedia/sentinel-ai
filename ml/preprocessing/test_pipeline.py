@@ -32,3 +32,26 @@ def test_single_class_target_is_rejected() -> None:
     frame = pd.DataFrame({"bytes": [1, 2, 3, 4], "label": ["benign"] * 4})
     with pytest.raises(ValueError, match="two distinct"):
         prepare_classification_data(frame, "label")
+
+
+def test_rare_class_with_two_rows_appears_in_train_and_test() -> None:
+    frame = pd.DataFrame(
+        {
+            "bytes": list(range(12)),
+            "label": ["benign"] * 10 + ["xss"] * 2,
+        }
+    )
+    result = prepare_classification_data(
+        frame,
+        "label",
+        test_size=0.25,
+        random_state=42,
+    )
+
+    encoded = {
+        name: index for index, name in enumerate(result.label_encoder.classes_)
+    }
+    xss_index = encoded["xss"]
+    assert (result.y_train == xss_index).sum() == 1
+    assert (result.y_test == xss_index).sum() == 1
+    assert result.split_strategy == "stratified_random_minimum_class_coverage"
