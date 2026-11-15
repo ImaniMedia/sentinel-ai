@@ -28,6 +28,8 @@ type Analysis = {
     recall_macro: number;
     f1_macro: number;
     false_positive_rate_macro: number;
+    roc_auc_macro_ovr: number | null;
+    roc_auc_note: string | null;
     test_sample_count: number;
     class_metrics: Array<{ class_name: string; precision: number; recall: number; f1: number; support: number }>;
   };
@@ -135,9 +137,11 @@ export default function DatasetWorkbench() {
             ["Macro recall", percent(analysis.classification.recall_macro)],
             ["Macro F1", percent(analysis.classification.f1_macro)],
             ["Macro false-positive rate", percent(analysis.classification.false_positive_rate_macro)],
+            ["Macro ROC-AUC (OvR)", analysis.classification.roc_auc_macro_ovr === null ? "—" : percent(analysis.classification.roc_auc_macro_ovr)],
             ["Anomalies flagged", `${analysis.anomaly_detection.flagged_count} / ${analysis.anomaly_detection.record_count}`],
           ].map(([label, value]) => <div key={label} style={metricStyle}><div style={{ fontSize: 10, color: "#8993a5" }}>{label}</div><strong style={{ display: "block", marginTop: 8, fontSize: 19, color: "#28354b" }}>{value}</strong></div>)}
         </div>
+        {analysis.classification.roc_auc_note && <p style={{ fontSize: 10, color: "#8993a5", marginTop: 8 }}>{analysis.classification.roc_auc_note}</p>}
         <h3 style={{ fontSize: 13, marginTop: 20 }}>Per-class performance</h3>
         <div style={{ overflowX: "auto" }}><table style={{ borderCollapse: "collapse", width: "100%", minWidth: 420, fontSize: 11 }}><thead><tr>{["Class", "Precision", "Recall", "F1", "Support"].map((v) => <th key={v} style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #e9edf3" }}>{v}</th>)}</tr></thead><tbody>{analysis.classification.class_metrics.map((item) => <tr key={item.class_name}>{[item.class_name, percent(item.precision), percent(item.recall), percent(item.f1), item.support].map((v, i) => <td key={i} style={{ padding: 8, borderBottom: "1px solid #f0f2f6" }}>{v}</td>)}</tr>)}</tbody></table></div>
         <p style={{ fontSize: 10, color: "#8993a5", lineHeight: 1.6, marginTop: 14 }}>{analysis.anomaly_detection.score_meaning}</p>
