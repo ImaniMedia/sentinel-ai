@@ -27,7 +27,6 @@ export default function HistoryWorkbench({ mode }: { mode: "predictions" | "aler
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    setLoading(true); setError("");
     try {
       const endpoint = mode === "predictions" ? "predictions" : "alerts";
       const response = await fetch(`${API_BASE}/api/v1/${endpoint}`);
@@ -59,7 +58,7 @@ export default function HistoryWorkbench({ mode }: { mode: "predictions" | "aler
     <div className="notice"><strong>Evidence-led records.</strong><span>These entries come from completed dataset analyses stored by the API. They are not live network detections.</span></div>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
       <span style={small}>{loading ? "Loading records…" : mode === "predictions" ? `${analyses.length} analysis records` : `${alerts.length} alert records`}</span>
-      <button style={button} onClick={() => void load()} disabled={loading}>Refresh</button>
+      <button style={button} onClick={() => { setLoading(true); void load(); }} disabled={loading}>Refresh</button>
     </div>
     {error && <p role="alert" style={{ color: "#b42318", background: "#fff1f0", padding: 10, borderRadius: 7, fontSize: 12 }}>{error}</p>}
     {!loading && !error && mode === "predictions" && analyses.length === 0 && <div style={{ ...panel, textAlign: "center", padding: 35 }}><b>No completed analyses yet</b><p style={small}>Inspect and analyse a labelled CSV in Dataset Management first.</p></div>}
