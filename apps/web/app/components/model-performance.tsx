@@ -39,7 +39,18 @@ export default function ModelPerformance() {
       setError(err instanceof Error ? err.message : "Could not load model performance.");
     } finally { setLoading(false); }
   }
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    let active = true;
+    fetch(`${API_BASE}/api/v1/predictions?limit=50`, { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Could not load saved evaluations (${response.status}).`);
+        return response.json() as Promise<{ items: AnalysisRecord[] }>;
+      })
+      .then((payload) => { if (active) setItems(payload.items || []); })
+      .catch((err) => { if (active) setError(err instanceof Error ? err.message : "Could not load model performance."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   const latest = items[0];
   const metrics = latest ? [
