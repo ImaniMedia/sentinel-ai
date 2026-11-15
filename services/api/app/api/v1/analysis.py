@@ -21,6 +21,7 @@ MAX_ROWS = 100_000
 @router.post("/analysis/classify")
 async def classify_dataset(
     label_column: str = Form(..., min_length=1, max_length=128),
+    group_column: str | None = Form(default=None, max_length=128),
     file: UploadFile = File(...),
 ) -> dict[str, Any]:
     """Train/evaluate a baseline on an uploaded labelled CSV in memory.
@@ -59,7 +60,7 @@ async def classify_dataset(
         )
 
     try:
-        prepared = prepare_classification_data(frame, label_column)
+        prepared = prepare_classification_data(frame, label_column, group_column=group_column or None)
         _, metrics = train_random_forest(prepared)
         _, anomaly = fit_isolation_forest(prepared.X_train, prepared.X_test)
     except (ValueError, TypeError) as exc:
@@ -78,6 +79,7 @@ async def classify_dataset(
             "row_count": int(len(frame)),
             "feature_count": len(prepared.feature_columns),
             "label_column": label_column,
+            "evaluation_group_column": prepared.group_column,
             "classes": [str(value) for value in prepared.label_encoder.classes_],
             "numeric_features": prepared.numeric_columns,
             "categorical_features": prepared.categorical_columns,
@@ -87,8 +89,16 @@ async def classify_dataset(
         "classification": metrics,
         "anomaly_detection": anomaly,
         "limitations": [
-            "Random train/test split; not a capture-aware or chronological security evaluation.",
-            "A stratified split is used only when every class can be represented in both partitions; otherwise an unstratified fallback is clearly flagged.",
+            (
+                f"Group-aware holdout used '{prepared.group_column}', keeping matching group values together; this is only as reliable as the selected grouping field."
+                if prepared.group_column
+                else "Random row-level train/test split; not a capture-aware or chronological security evaluation. Select a genuine capture, session, or collection-period identifier to run a group-aware holdout."
+            ),
+            (
+                "Group-aware holdout does not guarantee every class appears in both partitions; missing held-out classes are explicitly reported."
+                if prepared.group_column
+                else "The minimum-class-coverage stratified random split keeps each class in both partitions when feasible; otherwise an unstratified random fallback is clearly flagged."
+            ),
             "Class-level metrics with fewer than 20 test examples are low-support estimates and should not be treated as reliable performance evidence.",
             "Metrics are dataset-specific and do not establish real-world detection performance.",
             "Anomaly scores are not probabilities of malicious activity.",
