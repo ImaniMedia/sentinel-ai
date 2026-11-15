@@ -38,8 +38,8 @@ export default function OverviewSnapshot() {
 
   return <>
     <div className="metric-grid">
-      {metrics.map((metric) => { const Icon = metric.icon; return <article className="metric-card" key={metric.label}><div className="metric-top"><span>{metric.label}</span><i><Icon size={18} /></i></div><div className="metric-value">{metric.value}</div><div className="metric-note">{status === "ready" ? `${data?.analysis_count ?? 0} saved analyses` : status === "loading" ? "Loading verified totals…" : "API not connected"}</div></article>; })}
+      {metrics.map((metric) => { const Icon = metric.icon; return <article className="metric-card" key={metric.label}><div className="metric-top"><span>{metric.label}</span><i><Icon size={18} /></i></div><div className="metric-value">{metric.value}</div></article>; })}
     </div>
-    <p style={{ color: "#8993a5", fontSize: 10, marginTop: -6 }}>Summary values are retrieved from saved analysis records, not live network traffic.</p>
+    <p style={{ color: "#8993a5", fontSize: 11, marginTop: 8 }}>{status === "loading" ? "Loading verified workspace metrics…" : status === "unavailable" ? "Workspace metrics are unavailable. Check the API connection and refresh." : data?.analysis_count === 0 ? "No analyses have been recorded yet. Metrics will populate after the first dataset analysis." : `Totals reflect ${data?.analysis_count ?? 0} saved analyses. These are dataset-analysis results, not live network traffic.`}</p>
   </>;
 }
