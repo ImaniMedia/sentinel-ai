@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DatasetWorkbench from "./components/dataset-workbench";
 import HistoryWorkbench from "./components/history-workbench";
 import OverviewSnapshot from "./components/overview-snapshot";
+import ModelPerformance from "./components/model-performance";
 import {
   Activity, AlertTriangle, ArrowUpRight, Bell, BrainCircuit, ChevronDown,
   CircleHelp, FileUp, Gauge, LayoutDashboard, LockKeyhole, Menu,
-  Settings, Shield, ShieldCheck, SlidersHorizontal, Sparkles, X,
+  Settings, Shield, ShieldCheck, SlidersHorizontal, Sparkles, X, Moon, Sun,
 } from "lucide-react";
 
 const navigation = [
@@ -57,6 +58,18 @@ const pageCopy: Record<string, { title: string; description: string; detail: str
 export default function Home() {
   const [active, setActive] = useState("Overview");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  useEffect(() => {
+    const saved = window.localStorage.getItem("sentinel-theme");
+    const initial = saved === "dark" ? "dark" : "light";
+    setTheme(initial);
+    document.documentElement.dataset.theme = initial;
+  }, []);
+  function changeTheme(next: "light" | "dark") {
+    setTheme(next);
+    document.documentElement.dataset.theme = next;
+    window.localStorage.setItem("sentinel-theme", next);
+  }
   const selectedPage = pageCopy[active];
 
   return (
@@ -122,7 +135,7 @@ export default function Home() {
             <>
               <div className="welcome-row"><div><div className="eyebrow"><Sparkles size={14} /> SENTINEL AI WORKSPACE</div><h1>{selectedPage?.title ?? "Settings"}</h1><p>{selectedPage?.description ?? "Configure your research workspace."}</p></div><div className="date-button"><Activity size={15} /> Research mode</div></div>
               <div className="notice"><LockKeyhole size={17} /><p><b>Evidence-led reporting.</b> This workspace only displays results produced by actual dataset analysis. No sample threats or invented model scores are shown.</p></div>
-              {active === "Datasets" ? <DatasetWorkbench /> : active === "AI Predictions" ? <HistoryWorkbench mode="predictions" /> : active === "Threat Alerts" ? <HistoryWorkbench mode="alerts" /> : (
+              {active === "Datasets" ? <DatasetWorkbench /> : active === "AI Predictions" ? <HistoryWorkbench mode="predictions" /> : active === "Threat Alerts" ? <HistoryWorkbench mode="alerts" /> : active === "Model Performance" ? <ModelPerformance /> : active === "Settings" ? (
                 <article className="panel empty-alerts" style={{ minHeight: 270, height: "auto", padding: 30 }}>
                   <div className="empty-icon"><ShieldCheck size={22} /></div>
                   <b>{selectedPage?.detail ?? "Settings are not configured yet."}</b>
