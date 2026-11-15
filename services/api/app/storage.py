@@ -40,10 +40,15 @@ def initialize_storage() -> None:
                 f1_macro REAL NOT NULL,
                 false_positive_rate_macro REAL NOT NULL,
                 anomaly_count INTEGER NOT NULL,
-                anomaly_sample_count INTEGER NOT NULL
+                anomaly_sample_count INTEGER NOT NULL,
+                evaluation_json TEXT
             )
             """
         )
+        # Safe, additive migration for databases created by earlier deployments.
+        columns = {row["name"] for row in connection.execute("PRAGMA table_info(analyses)")}
+        if "evaluation_json" not in columns:
+            connection.execute("ALTER TABLE analyses ADD COLUMN evaluation_json TEXT")
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS alerts (
@@ -64,21 +69,27 @@ def initialize_storage() -> None:
 
 
 def save_analysis(result: dict[str, Any]) -> int:
-    # Ensure storage also works in tests or ASGI clients that do not run lifespan hooks.
     initialize_storage()
     dataset = result["dataset"]
     metrics = result["classification"]
     anomaly = result["anomaly_detection"]
     flagged = int(anomaly["flagged_count"])
     sample_count = int(anomaly["record_count"])
+    evaluation = {
+        "classification": metrics,
+        "limitations": result.get("limitations", []),
+        "evaluation_group_column": dataset.get("evaluation_group_column"),
+        "feature_count": int(dataset["feature_count"]),
+    }
     with _connect() as connection:
         cursor = connection.execute(
             """
             INSERT INTO analyses (
                 filename, row_count, feature_count, label_column, classes_json,
                 accuracy, precision_macro, recall_macro, f1_macro,
-                false_positive_rate_macro, anomaly_count, anomaly_sample_count
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                false_positive_rate_macro, anomaly_count, anomaly_sample_count,
+                evaluation_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 result["filename"], int(dataset["row_count"]), int(dataset["feature_count"]),
@@ -86,6 +97,7 @@ def save_analysis(result: dict[str, Any]) -> int:
                 float(metrics["accuracy"]), float(metrics["precision_macro"]),
                 float(metrics["recall_macro"]), float(metrics["f1_macro"]),
                 float(metrics["false_positive_rate_macro"]), flagged, sample_count,
+                json.dumps(evaluation),
             ),
         )
         analysis_id = int(cursor.lastrowid)
@@ -119,6 +131,7 @@ def list_analyses(limit: int = 50) -> list[dict[str, Any]]:
             "recall_macro": row["recall_macro"], "f1_macro": row["f1_macro"],
             "false_positive_rate_macro": row["false_positive_rate_macro"],
             "anomaly_count": row["anomaly_count"], "anomaly_sample_count": row["anomaly_sample_count"],
+            "evaluation": json.loads(row["evaluation_json"]) if row["evaluation_json"] else None,
         }
         for row in rows
     ]
