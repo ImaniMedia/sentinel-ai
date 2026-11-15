@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.analysis import router as analysis_router
 from app.api.v1.datasets import router as datasets_router
+from app.api.v1.history import router as history_router
+from app.storage import initialize_storage
 
 app = FastAPI(
     title="Sentinel AI API",
@@ -33,6 +35,13 @@ app.add_middleware(
 
 app.include_router(datasets_router, prefix="/api/v1")
 app.include_router(analysis_router, prefix="/api/v1")
+app.include_router(history_router, prefix="/api/v1")
+
+
+@app.on_event("startup")
+def startup_storage() -> None:
+    """Create local summary tables before serving requests."""
+    initialize_storage()
 
 
 @app.get("/health", tags=["health"])
