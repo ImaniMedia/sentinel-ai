@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import DatasetWorkbench from "./components/dataset-workbench";
 import {
   Activity, AlertTriangle, ArrowUpRight, Bell, BrainCircuit, ChevronDown,
   CircleHelp, FileUp, Gauge, LayoutDashboard, LockKeyhole, Menu, Network,
@@ -126,12 +127,14 @@ export default function Home() {
             <>
               <div className="welcome-row"><div><div className="eyebrow"><Sparkles size={14} /> SENTINEL AI WORKSPACE</div><h1>{selectedPage?.title ?? "Settings"}</h1><p>{selectedPage?.description ?? "Configure your research workspace."}</p></div><div className="date-button"><Activity size={15} /> Research mode</div></div>
               <div className="notice"><LockKeyhole size={17} /><p><b>Evidence-led reporting.</b> This workspace only displays results produced by actual dataset analysis. No sample threats or invented model scores are shown.</p></div>
-              <article className="panel empty-alerts" style={{ minHeight: 270, height: "auto", padding: 30 }}>
-                <div className="empty-icon"><ShieldCheck size={22} /></div>
-                <b>{selectedPage?.detail ?? "Settings are not configured yet."}</b>
-                <p style={{ maxWidth: 520, lineHeight: 1.7 }}>{selectedPage?.next ?? "Workspace configuration controls will be added after core analysis and storage are connected."}</p>
-                {active === "Datasets" && <a className="text-button" href="https://github.com/ImaniMedia/sentinel-ai/blob/main/services/api/app/api/v1/datasets.py" target="_blank" rel="noreferrer">Review CSV inspection endpoint <ArrowUpRight size={14} /></a>}
-              </article>
+              {active === "Datasets" ? <DatasetWorkbench /> : (
+                <article className="panel empty-alerts" style={{ minHeight: 270, height: "auto", padding: 30 }}>
+                  <div className="empty-icon"><ShieldCheck size={22} /></div>
+                  <b>{selectedPage?.detail ?? "Settings are not configured yet."}</b>
+                  <p style={{ maxWidth: 520, lineHeight: 1.7 }}>{selectedPage?.next ?? "Workspace configuration controls will be added after core analysis and storage are connected."}</p>
+                  {active === "Datasets" && <a className="text-button" href="https://github.com/ImaniMedia/sentinel-ai/blob/main/services/api/app/api/v1/datasets.py" target="_blank" rel="noreferrer">Review CSV inspection endpoint <ArrowUpRight size={14} /></a>}
+                </article>
+              )}
             </>
           )}
           <footer>Sentinel AI <span>·</span> Evidence-led security research <span>·</span> Offline dataset analysis</footer>
