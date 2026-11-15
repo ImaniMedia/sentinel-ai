@@ -35,6 +35,8 @@ class PreparedDataset:
     split_strategy: str
     evaluation_warnings: list[str]
     group_column: str | None
+    train_group_values: list[str]
+    test_group_values: list[str]
 
 
 def prepare_classification_data(
@@ -127,6 +129,8 @@ def prepare_classification_data(
     n_test = int(np.ceil(len(y) * test_size))
     n_train = len(y) - n_test
     evaluation_warnings: list[str] = []
+    train_group_values: list[str] = []
+    test_group_values: list[str] = []
 
     if group_values is not None:
         from sklearn.model_selection import GroupShuffleSplit
@@ -139,6 +143,8 @@ def prepare_classification_data(
         y_train, y_test = y[train_indices], y[test_indices]
         train_groups = set(group_values[train_indices])
         test_groups = set(group_values[test_indices])
+        train_group_values = sorted(train_groups)
+        test_group_values = sorted(test_groups)
         if train_groups.intersection(test_groups):
             raise RuntimeError("Group-aware split produced overlapping groups")
         split_strategy = "group_holdout"
@@ -239,4 +245,6 @@ def prepare_classification_data(
         split_strategy=split_strategy,
         evaluation_warnings=evaluation_warnings,
         group_column=group_column,
+        train_group_values=train_group_values,
+        test_group_values=test_group_values,
     )
