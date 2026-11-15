@@ -131,6 +131,7 @@ def prepare_classification_data(
     evaluation_warnings: list[str] = []
     train_group_values: list[str] = []
     test_group_values: list[str] = []
+    can_stratify = False
 
     if group_values is not None:
         from sklearn.model_selection import GroupShuffleSplit
@@ -189,7 +190,7 @@ def prepare_classification_data(
         if int(allocation.sum()) != n_test:
             can_stratify = False
 
-    if can_stratify:
+    if group_values is None and can_stratify:
         test_parts = []
         train_parts = []
         for class_index, test_count in enumerate(allocation):
