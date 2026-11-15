@@ -81,7 +81,7 @@ export default function Home() {
         </nav>
         <div className="sidebar-bottom">
           <div className="environment-card"><span className="status-dot" /><div><b>Research environment</b><small>Offline dataset mode</small></div></div>
-          <button className="nav-item" onClick={() => setActive("Settings")}><Settings size={18} /><span>Settings</span></button>
+          <button className="nav-item" onClick={() => { setActive("Settings"); setMenuOpen(false); }}><Settings size={18} /><span>Settings</span></button>
           <div className="profile"><div className="avatar">SA</div><div><b>Security Analyst</b><small>Research workspace</small></div><ChevronDown size={16} /></div>
         </div>
       </aside>
