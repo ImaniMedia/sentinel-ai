@@ -21,6 +21,7 @@ type Analysis = {
     feature_count: number;
     label_column: string;
     classes: string[];
+    class_distribution: Array<{ class_name: string; total: number }>;
   };
   classification: {
     accuracy: number;
@@ -31,7 +32,12 @@ type Analysis = {
     roc_auc_macro_ovr: number | null;
     roc_auc_note: string | null;
     test_sample_count: number;
-    class_metrics: Array<{ class_name: string; precision: number; recall: number; f1: number; support: number }>;
+    class_metrics: Array<{ class_name: string; precision: number; recall: number; f1: number; support: number; evaluation_warning: string | null }>;
+    confusion_matrix: number[][];
+    split_strategy: string;
+    split_warnings: string[];
+    evaluation_warnings: string[];
+    minimum_recommended_test_support: number;
   };
   anomaly_detection: {
     flagged_count: number;
@@ -142,8 +148,17 @@ export default function DatasetWorkbench() {
           ].map(([label, value]) => <div key={label} style={metricStyle}><div style={{ fontSize: 10, color: "#8993a5" }}>{label}</div><strong style={{ display: "block", marginTop: 8, fontSize: 19, color: "#28354b" }}>{value}</strong></div>)}
         </div>
         {analysis.classification.roc_auc_note && <p style={{ fontSize: 10, color: "#8993a5", marginTop: 8 }}>{analysis.classification.roc_auc_note}</p>}
+        <h3 style={{ fontSize: 13, marginTop: 20 }}>Dataset class distribution</h3>
+        <p style={{ color: "#64748b", fontSize: 10, lineHeight: 1.6 }}>Counts across all labelled rows before the train/test split.</p>
+        <div style={{ overflowX: "auto" }}><table style={{ borderCollapse: "collapse", width: "100%", minWidth: 300, fontSize: 11 }}><thead><tr>{["Class", "Total rows"].map((v) => <th key={v} style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #e9edf3" }}>{v}</th>)}</tr></thead><tbody>{analysis.dataset.class_distribution.map((item) => <tr key={item.class_name}><td style={{ padding: 8, borderBottom: "1px solid #f0f2f6" }}>{item.class_name}</td><td style={{ padding: 8, borderBottom: "1px solid #f0f2f6" }}>{item.total.toLocaleString()}</td></tr>)}</tbody></table></div>
         <h3 style={{ fontSize: 13, marginTop: 20 }}>Per-class performance</h3>
+        <p style={{ color: "#64748b", fontSize: 10 }}>Split method: {analysis.classification.split_strategy.replaceAll("_", " ")}. Low-support warning threshold: fewer than {analysis.classification.minimum_recommended_test_support} test examples.</p>
+        {analysis.classification.split_warnings.map((warning) => <p key={warning} role="status" style={{ background: "#fff7e6", color: "#8a5a00", padding: 9, borderRadius: 7, fontSize: 10 }}>{warning}</p>)}
+        {analysis.classification.evaluation_warnings.map((warning) => <p key={warning} role="status" style={{ background: "#fff7e6", color: "#8a5a00", padding: 9, borderRadius: 7, fontSize: 10 }}>{warning}</p>)}
         <div style={{ overflowX: "auto" }}><table style={{ borderCollapse: "collapse", width: "100%", minWidth: 420, fontSize: 11 }}><thead><tr>{["Class", "Precision", "Recall", "F1", "Support"].map((v) => <th key={v} style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #e9edf3" }}>{v}</th>)}</tr></thead><tbody>{analysis.classification.class_metrics.map((item) => <tr key={item.class_name}>{[item.class_name, percent(item.precision), percent(item.recall), percent(item.f1), item.support].map((v, i) => <td key={i} style={{ padding: 8, borderBottom: "1px solid #f0f2f6" }}>{v}</td>)}</tr>)}</tbody></table></div>
+        <h3 style={{ fontSize: 13, marginTop: 20 }}>Confusion matrix</h3>
+        <p style={{ color: "#64748b", fontSize: 10 }}>Rows are actual classes; columns are predicted classes. Values are test-set record counts.</p>
+        <div style={{ overflowX: "auto" }}><table style={{ borderCollapse: "collapse", width: "100%", minWidth: 440, fontSize: 10 }}><thead><tr><th style={{ padding: 7, textAlign: "left" }}>Actual ↓ / Predicted →</th>{analysis.dataset.classes.map((name) => <th key={name} style={{ padding: 7, textAlign: "right" }}>{name}</th>)}</tr></thead><tbody>{analysis.classification.confusion_matrix.map((row, index) => <tr key={analysis.dataset.classes[index]}><th style={{ padding: 7, textAlign: "left", borderTop: "1px solid #e9edf3" }}>{analysis.dataset.classes[index]}</th>{row.map((value, col) => <td key={col} style={{ padding: 7, textAlign: "right", borderTop: "1px solid #f0f2f6" }}>{value}</td>)}</tr>)}</tbody></table></div>
         <p style={{ fontSize: 10, color: "#8993a5", lineHeight: 1.6, marginTop: 14 }}>{analysis.anomaly_detection.score_meaning}</p>
         <h3 style={{ fontSize: 13, marginTop: 18 }}>Evaluation limitations</h3>
         <ul style={{ paddingLeft: 18, color: "#64748b", fontSize: 11, lineHeight: 1.7 }}>{analysis.limitations.map((item) => <li key={item}>{item}</li>)}</ul>
