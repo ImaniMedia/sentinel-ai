@@ -13,7 +13,6 @@ import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
-from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 
@@ -107,15 +106,55 @@ def prepare_classification_data(
     label_encoder = LabelEncoder()
     y = label_encoder.fit_transform(y_raw)
 
-    # Prefer stratification only when every class can be represented in both partitions.
+    # Allocate test rows per class ourselves. sklearn's approximate stratified
+    # allocation can still assign zero test rows to a class with only two rows.
     counts = y_raw.value_counts().reindex(label_encoder.classes_, fill_value=0)
     n_test = int(np.ceil(len(y) * test_size))
     n_train = len(y) - n_test
     can_stratify = bool(counts.min() >= 2 and n_test >= len(counts) and n_train >= len(counts))
-    stratify = y if can_stratify else None
-    split_strategy = "stratified_random"
+    split_strategy = "stratified_random_minimum_class_coverage"
     evaluation_warnings: list[str] = []
-    if not can_stratify:
+
+    if can_stratify:
+        rng = np.random.default_rng(random_state)
+        ideal = counts.to_numpy(dtype=float) * test_size
+        allocation = np.floor(ideal).astype(int)
+        allocation = np.maximum(allocation, 1)
+        allocation = np.minimum(allocation, counts.to_numpy(dtype=int) - 1)
+
+        # Adjust allocations to exactly match the requested test-set size,
+        # while preserving at least one train and one test row per class.
+        while int(allocation.sum()) < n_test:
+            eligible = np.flatnonzero(allocation < counts.to_numpy(dtype=int) - 1)
+            if len(eligible) == 0:
+                break
+            chosen = eligible[np.argmax(ideal[eligible] - allocation[eligible])]
+            allocation[chosen] += 1
+        while int(allocation.sum()) > n_test:
+            eligible = np.flatnonzero(allocation > 1)
+            if len(eligible) == 0:
+                break
+            chosen = eligible[np.argmin(ideal[eligible] - allocation[eligible])]
+            allocation[chosen] -= 1
+
+        if int(allocation.sum()) != n_test:
+            can_stratify = False
+
+    if can_stratify:
+        test_parts = []
+        train_parts = []
+        for class_index, test_count in enumerate(allocation):
+            class_indices = np.flatnonzero(y == class_index)
+            rng.shuffle(class_indices)
+            test_parts.extend(class_indices[:test_count].tolist())
+            train_parts.extend(class_indices[test_count:].tolist())
+        test_indices = np.asarray(test_parts, dtype=int)
+        train_indices = np.asarray(train_parts, dtype=int)
+        rng.shuffle(test_indices)
+        rng.shuffle(train_indices)
+        X_train, X_test = X.iloc[train_indices], X.iloc[test_indices]
+        y_train, y_test = y[train_indices], y[test_indices]
+    else:
         split_strategy = "random_unstratified_fallback"
         rare = [f"{name} ({int(count)})" for name, count in counts.items() if count < 2]
         if rare:
@@ -128,14 +167,12 @@ def prepare_classification_data(
             evaluation_warnings.append(
                 "Stratification was not possible because the requested train/test partition sizes cannot contain every class."
             )
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=test_size,
-        random_state=random_state,
-        stratify=stratify,
-    )
+        rng = np.random.default_rng(random_state)
+        indices = rng.permutation(len(y))
+        test_indices = indices[:n_test]
+        train_indices = indices[n_test:]
+        X_train, X_test = X.iloc[train_indices], X.iloc[test_indices]
+        y_train, y_test = y[train_indices], y[test_indices]
 
     # Critical leakage control: fit imputers/scalers/encoders on training rows only.
     X_train_ready = preprocessor.fit_transform(X_train)
