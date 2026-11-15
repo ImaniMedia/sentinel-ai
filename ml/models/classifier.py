@@ -1,4 +1,4 @@
-"""Supervised baseline classifier and evaluation helpers."""
+""""Supervised baseline classifier and evaluation helpers."""
 from __future__ import annotations
 
 from typing import Any
@@ -9,6 +9,7 @@ from sklearn.metrics import (
     accuracy_score,
     confusion_matrix,
     precision_recall_fscore_support,
+    roc_auc_score,
 )
 
 from ml.preprocessing.pipeline import PreparedDataset
@@ -31,6 +32,7 @@ def train_random_forest(
     )
     model.fit(prepared.X_train, prepared.y_train)
     predictions = model.predict(prepared.X_test)
+    probabilities = model.predict_proba(prepared.X_test)
 
     precision, recall, f1, support = precision_recall_fscore_support(
         prepared.y_test,
@@ -58,12 +60,37 @@ def train_random_forest(
             float(false_positive / denominator) if denominator else 0.0
         )
 
+    # ROC-AUC is undefined if the held-out partition omits a class.
+    roc_auc_macro: float | None = None
+    roc_auc_note: str | None = None
+    expected_classes = np.arange(len(prepared.label_encoder.classes_))
+    if len(np.unique(prepared.y_test)) != len(expected_classes):
+        roc_auc_note = "Not available: the held-out test partition does not contain every class."
+    else:
+        try:
+            if len(expected_classes) == 2:
+                roc_auc_macro = float(roc_auc_score(prepared.y_test, probabilities[:, 1]))
+            else:
+                roc_auc_macro = float(
+                    roc_auc_score(
+                        prepared.y_test,
+                        probabilities,
+                        labels=expected_classes,
+                        multi_class="ovr",
+                        average="macro",
+                    )
+                )
+        except ValueError:
+            roc_auc_note = "Not available: ROC-AUC could not be calculated for this test partition."
+
     metrics: dict[str, Any] = {
         "accuracy": float(accuracy_score(prepared.y_test, predictions)),
         "precision_macro": float(np.mean(precision)),
         "recall_macro": float(np.mean(recall)),
         "f1_macro": float(np.mean(f1)),
         "false_positive_rate_macro": float(np.mean(false_positive_rates)),
+        "roc_auc_macro_ovr": roc_auc_macro,
+        "roc_auc_note": roc_auc_note,
         "class_metrics": [
             {
                 "class_name": str(prepared.label_encoder.classes_[index]),
