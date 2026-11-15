@@ -77,5 +77,11 @@ def train_random_forest(
         "confusion_matrix": matrix.tolist(),
         "test_sample_count": int(len(prepared.y_test)),
         "metric_source": "held_out_test_partition",
+        "test_actual_labels": [
+            str(value) for value in prepared.label_encoder.inverse_transform(prepared.y_test)
+        ],
+        "test_predicted_labels": [
+            str(value) for value in prepared.label_encoder.inverse_transform(predictions)
+        ],
     }
     return model, metrics
