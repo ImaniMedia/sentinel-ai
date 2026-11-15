@@ -20,6 +20,7 @@ type Analysis = {
     row_count: number;
     feature_count: number;
     label_column: string;
+    evaluation_group_column: string | null;
     classes: string[];
     class_distribution: Array<{ class_name: string; total: number }>;
   };
