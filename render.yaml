@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: sentinel-ai-api
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:
+      name: sentinel-ai-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: SENTINEL_DB_PATH
+        value: /var/data/sentinel.db
+      - key: SENTINEL_CORS_ORIGINS
+        sync: false
