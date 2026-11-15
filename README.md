@@ -59,8 +59,14 @@ Open `http://127.0.0.1:8000/health` or `http://127.0.0.1:8000/docs`.
 - Never invent model metrics. Every reported score must come from a reproducible evaluation.
 - Keep ground-truth labels separate from model predictions.
 
-## Project status
+## Current MVP status
 
-Foundation stage. The health endpoint is starter scaffolding. Dataset ingestion, trained models, dashboard features and deployment are not yet implemented or validated.
+Implemented in the repository:
+- FastAPI health, CSV inspection, and labelled-dataset baseline analysis endpoints.
+- Preprocessing, Random Forest classification, and Isolation Forest anomaly detection.
+- Next.js dashboard with dataset workbench, saved analysis history, and analyst-reviewed anomaly alerts.
+- SQLite storage for aggregate analysis summaries and alert metadata only.
+- GitHub Actions checks for Python tests, frontend linting, and the Next.js production build.
+- Docker and Render deployment configuration for the API.
 
-See [the delivery plan](docs/PLAN.md), [architecture](docs/ARCHITECTURE.md), and [security notes](SECURITY.md).
+The current analysis is an offline, uploaded-CSV workflow. It is not a live network sensor. The baseline uses a generic random train/test split and must not be presented as capture-aware security validation. Review [deployment instructions](docs/DEPLOYMENT.md), [the delivery plan](docs/PLAN.md), [architecture](docs/ARCHITECTURE.md), and [security notes](SECURITY.md).
