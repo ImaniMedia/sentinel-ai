@@ -65,3 +65,24 @@ The dataset workspace supports CSV inspection and baseline classification.
 Uploads are processed in memory and are not persisted. Analysis results are
 shown only after the API returns measured metrics. The API's current random
 train/test split is a baseline, not a capture-aware evaluation.
+
+
+## Analysis history and alerts
+
+The API stores derived analysis summaries in a local SQLite database. The
+default path is `data/sentinel.db`; override it with `SENTINEL_DB_PATH`.
+Uploaded CSV files, row-level network events, and trained model artifacts are
+not stored. The database records aggregate evaluation metrics and an alert
+when the anomaly detector flags records in the held-out sample.
+
+Available routes:
+- `GET /api/v1/dashboard/overview`
+- `GET /api/v1/predictions`
+- `GET /api/v1/alerts`
+- `PATCH /api/v1/alerts/{alert_id}` with JSON `{"status":"reviewed"}`
+  (also supports `open` and `dismissed`).
+
+SQLite data survives application restarts only when the database file is on
+persistent storage. Hosted deployments must mount a persistent volume and set
+`SENTINEL_DB_PATH` to its mount path. Without that, deployment filesystems may
+discard the database. These routes have been added but are not yet runtime-tested.
