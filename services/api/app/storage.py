@@ -64,6 +64,8 @@ def initialize_storage() -> None:
 
 
 def save_analysis(result: dict[str, Any]) -> int:
+    # Ensure storage also works in tests or ASGI clients that do not run lifespan hooks.
+    initialize_storage()
     dataset = result["dataset"]
     metrics = result["classification"]
     anomaly = result["anomaly_detection"]
