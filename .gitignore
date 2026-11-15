@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+.turbo/
+*.tsbuildinfo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Datasets and model artifacts
+data/
+datasets/
+artifacts/
+models/
+*.csv
+*.parquet
+*.pkl
+*.joblib
+*.onnx
+
+# Local databases, logs and OS files
+*.sqlite
+*.db
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
