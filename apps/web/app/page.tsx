@@ -62,8 +62,8 @@ export default function Home() {
   useEffect(() => {
     const saved = window.localStorage.getItem("sentinel-theme");
     const initial = saved === "dark" ? "dark" : "light";
-    setTheme(initial);
     document.documentElement.dataset.theme = initial;
+    Promise.resolve().then(() => setTheme(initial));
   }, []);
   function changeTheme(next: "light" | "dark") {
     setTheme(next);
