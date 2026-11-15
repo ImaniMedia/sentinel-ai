@@ -1,0 +1,53 @@
+name: Sentinel AI CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  api-and-ml-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            services/api/requirements.txt
+            ml/requirements.txt
+      - name: Install API and ML dependencies
+        run: python -m pip install -r services/api/requirements.txt -r ml/requirements.txt
+      - name: Run API and ML tests
+        env:
+          PYTHONPATH: .:services/api
+          SENTINEL_DB_PATH: /tmp/sentinel-ci.db
+        run: pytest services/api/tests ml
+
+  web-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package.json
+      - name: Install dependencies
+        run: npm install
+      - name: Run ESLint
+        run: npm run lint
+      - name: Build Next.js application
+        run: npm run build
