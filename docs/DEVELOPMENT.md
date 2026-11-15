@@ -47,3 +47,21 @@ Use `POST /api/v1/analysis/classify` with multipart form fields:
 This endpoint trains a baseline on the uploaded data in memory. It does not save the upload or model.
 
 These instructions are not yet verified in a clean environment. Do not treat the tests as passing until they have actually been run.
+
+
+## Frontend dataset workspace
+
+The Next.js dataset workspace calls the API from the browser. Start the API on
+`http://localhost:8000` and the web app on `http://localhost:3000`.
+The API allows those two local development origins by default.
+
+If the frontend and API are hosted on different domains, set
+`SENTINEL_CORS_ORIGINS` on the API to a comma-separated list of exact trusted
+frontend origins, and set `NEXT_PUBLIC_SENTINEL_API_URL` in the frontend
+environment to the API base URL (without a trailing slash). Restart both
+services after changing environment variables.
+
+The dataset workspace supports CSV inspection and baseline classification.
+Uploads are processed in memory and are not persisted. Analysis results are
+shown only after the API returns measured metrics. The API's current random
+train/test split is a baseline, not a capture-aware evaluation.
