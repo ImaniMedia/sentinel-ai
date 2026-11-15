@@ -27,6 +27,7 @@ export default function HistoryWorkbench({ mode }: { mode: "predictions" | "aler
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       const endpoint = mode === "predictions" ? "predictions" : "alerts";
       const response = await fetch(`${API_BASE}/api/v1/${endpoint}`);
@@ -34,12 +35,37 @@ export default function HistoryWorkbench({ mode }: { mode: "predictions" | "aler
       if (!response.ok) throw new Error(data.detail || `API request failed (${response.status})`);
       if (mode === "predictions") setAnalyses(data.items || []);
       else setAlerts(data.items || []);
+      setError("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load records.");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }, [mode]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    const endpoint = mode === "predictions" ? "predictions" : "alerts";
+    fetch(`${API_BASE}/api/v1/${endpoint}`)
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || `API request failed (${response.status})`);
+        return data;
+      })
+      .then((data) => {
+        if (!active) return;
+        if (mode === "predictions") setAnalyses(data.items || []);
+        else setAlerts(data.items || []);
+        setError("");
+      })
+      .catch((err: unknown) => {
+        if (active) setError(err instanceof Error ? err.message : "Could not load records.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, [mode]);
 
   async function changeStatus(id: number, status: "reviewed" | "dismissed") {
     setError("");
@@ -58,7 +84,7 @@ export default function HistoryWorkbench({ mode }: { mode: "predictions" | "aler
     <div className="notice"><strong>Evidence-led records.</strong><span>These entries come from completed dataset analyses stored by the API. They are not live network detections.</span></div>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
       <span style={small}>{loading ? "Loading records…" : mode === "predictions" ? `${analyses.length} analysis records` : `${alerts.length} alert records`}</span>
-      <button style={button} onClick={() => { setLoading(true); void load(); }} disabled={loading}>Refresh</button>
+      <button style={button} onClick={() => void load()} disabled={loading}>Refresh</button>
     </div>
     {error && <p role="alert" style={{ color: "#b42318", background: "#fff1f0", padding: 10, borderRadius: 7, fontSize: 12 }}>{error}</p>}
     {!loading && !error && mode === "predictions" && analyses.length === 0 && <div style={{ ...panel, textAlign: "center", padding: 35 }}><b>No completed analyses yet</b><p style={small}>Inspect and analyse a labelled CSV in Dataset Management first.</p></div>}
