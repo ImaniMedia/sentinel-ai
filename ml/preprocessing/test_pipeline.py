@@ -78,8 +78,10 @@ def test_group_holdout_keeps_groups_separate_and_excludes_group_feature() -> Non
     assert result.group_column == "capture_id"
     assert result.split_strategy == "group_holdout"
     # Each partition contains whole capture groups, never a mixture of rows.
-    train_groups = set(frame.iloc[result._train_indices]["capture_id"]) if hasattr(result, "_train_indices") else None
-    test_groups = set(frame.iloc[result._test_indices]["capture_id"]) if hasattr(result, "_test_indices") else None
+    train_groups = set(result.train_group_values)
+    test_groups = set(result.test_group_values)
+    assert train_groups.isdisjoint(test_groups)
+    assert train_groups | test_groups == {"capture-a", "capture-b"}
     assert len(set(result.y_train)) == 2
     assert len(set(result.y_test)) == 2
     assert any("Group-aware holdout used 'capture_id'" in warning for warning in result.evaluation_warnings)
