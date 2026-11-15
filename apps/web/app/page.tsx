@@ -3,6 +3,7 @@
 import { useState } from "react";
 import DatasetWorkbench from "./components/dataset-workbench";
 import HistoryWorkbench from "./components/history-workbench";
+import OverviewSnapshot from "./components/overview-snapshot";
 import {
   Activity, AlertTriangle, ArrowUpRight, Bell, BrainCircuit, ChevronDown,
   CircleHelp, FileUp, Gauge, LayoutDashboard, LockKeyhole, Menu, Network,
@@ -18,12 +19,7 @@ const navigation = [
   { label: "Research Lab", icon: SlidersHorizontal },
 ];
 
-const metrics = [
-  { label: "Records analysed", icon: Network },
-  { label: "Threats identified", icon: ShieldCheck },
-  { label: "Anomalies detected", icon: Activity },
-  { label: "Model F1 score", icon: BrainCircuit },
-];
+
 
 const pageCopy: Record<string, { title: string; description: string; detail: string; next: string }> = {
   "AI Predictions": {
@@ -112,9 +108,7 @@ export default function Home() {
               </div>
               <div className="notice"><LockKeyhole size={17} /><p><b>Research environment is ready.</b> Metrics and alerts will appear after you upload and analyse a dataset. Nothing here is simulated.</p></div>
               <div className="section-heading"><div><h2>Workspace snapshot</h2><p>Results from your analysed datasets</p></div><span className="empty-chip">Awaiting first analysis</span></div>
-              <div className="metric-grid">
-                {metrics.map((metric) => { const Icon = metric.icon; return <article className="metric-card" key={metric.label}><div className="metric-top"><span>{metric.label}</span><i><Icon size={18} /></i></div><div className="metric-value">—</div><div className="metric-note">No verified results yet</div></article>; })}
-              </div>
+              <OverviewSnapshot />
               <div className="dashboard-grid">
                 <article className="panel activity-panel"><div className="panel-heading"><div><h2>Traffic analysis</h2><p>Dataset activity over time</p></div><span className="empty-chip">No data yet</span></div><div className="empty-chart"><div className="chart-grid"><span /><span /><span /><span /></div><div className="chart-empty-icon"><Activity size={25} /></div><b>Your analysis timeline will appear here</b><p>Upload a labelled network-flow CSV to get started.</p></div><div className="chart-legend"><span><i className="legend-blue" /> Records analysed</span><span><i className="legend-orange" /> Flagged anomalies</span></div></article>
                 <article className="panel alerts-panel"><div className="panel-heading"><div><h2>Recent threat alerts</h2><p>Items requiring analyst review</p></div><button className="text-button" onClick={() => setActive("Threat Alerts")}>View all <ArrowUpRight size={14} /></button></div><div className="empty-alerts"><div className="empty-icon"><ShieldCheck size={22} /></div><b>No alerts to review</b><p>Alerts will be generated from actual dataset analysis results.</p></div></article>
