@@ -10,6 +10,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from ml.models.anomaly import fit_isolation_forest
 from ml.models.classifier import train_random_forest
 from ml.preprocessing.pipeline import prepare_classification_data
+from app.storage import save_analysis
 
 router = APIRouter(tags=["analysis"])
 
@@ -70,7 +71,7 @@ async def classify_dataset(
             detail="Analysis failed unexpectedly. Check the dataset schema and server logs.",
         ) from exc
 
-    return {
+    result = {
         "filename": filename,
         "analysis_status": "completed",
         "dataset": {
@@ -88,6 +89,8 @@ async def classify_dataset(
             "Generic random train/test split; not a capture-aware or chronological security evaluation.",
             "Metrics are dataset-specific and do not establish real-world detection performance.",
             "Anomaly scores are not probabilities of malicious activity.",
-            "Upload and model artifacts are not persisted.",
+            "Uploaded CSV files and trained model artifacts are not persisted; only summary metrics and alert metadata are stored locally.",
         ],
     }
+    result["analysis_id"] = save_analysis(result)
+    return result
