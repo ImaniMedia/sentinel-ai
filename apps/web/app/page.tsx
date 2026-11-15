@@ -6,7 +6,7 @@ import HistoryWorkbench from "./components/history-workbench";
 import OverviewSnapshot from "./components/overview-snapshot";
 import {
   Activity, AlertTriangle, ArrowUpRight, Bell, BrainCircuit, ChevronDown,
-  CircleHelp, FileUp, Gauge, LayoutDashboard, LockKeyhole, Menu, Network,
+  CircleHelp, FileUp, Gauge, LayoutDashboard, LockKeyhole, Menu,
   Settings, Shield, ShieldCheck, SlidersHorizontal, Sparkles, X,
 } from "lucide-react";
 
