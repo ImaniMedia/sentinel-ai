@@ -32,6 +32,9 @@ class PreparedDataset:
     numeric_columns: list[str]
     categorical_columns: list[str]
     dropped_empty_columns: list[str]
+    class_distribution: list[dict[str, Any]]
+    split_strategy: str
+    evaluation_warnings: list[str]
 
 
 def prepare_classification_data(
@@ -104,10 +107,27 @@ def prepare_classification_data(
     label_encoder = LabelEncoder()
     y = label_encoder.fit_transform(y_raw)
 
-    # Stratify only when every class can appear in both partitions.
-    counts = pd.Series(y).value_counts()
+    # Prefer stratification only when every class can be represented in both partitions.
+    counts = y_raw.value_counts().reindex(label_encoder.classes_, fill_value=0)
     n_test = int(np.ceil(len(y) * test_size))
-    stratify = y if counts.min() >= 2 and n_test >= len(counts) else None
+    n_train = len(y) - n_test
+    can_stratify = bool(counts.min() >= 2 and n_test >= len(counts) and n_train >= len(counts))
+    stratify = y if can_stratify else None
+    split_strategy = "stratified_random"
+    evaluation_warnings: list[str] = []
+    if not can_stratify:
+        split_strategy = "random_unstratified_fallback"
+        rare = [f"{name} ({int(count)})" for name, count in counts.items() if count < 2]
+        if rare:
+            evaluation_warnings.append(
+                "Stratification was not possible because these classes have fewer than 2 total examples: "
+                + ", ".join(rare)
+                + ". Their train/test representation is not guaranteed."
+            )
+        else:
+            evaluation_warnings.append(
+                "Stratification was not possible because the requested train/test partition sizes cannot contain every class."
+            )
 
     X_train, X_test, y_train, y_test = train_test_split(
         X,
@@ -132,4 +152,10 @@ def prepare_classification_data(
         numeric_columns=[str(c) for c in numeric_columns],
         categorical_columns=[str(c) for c in categorical_columns],
         dropped_empty_columns=empty_columns,
+        class_distribution=[
+            {"class_name": str(name), "total": int(count)}
+            for name, count in counts.items()
+        ],
+        split_strategy=split_strategy,
+        evaluation_warnings=evaluation_warnings,
     )
