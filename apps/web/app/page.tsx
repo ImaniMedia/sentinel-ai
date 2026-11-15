@@ -136,10 +136,20 @@ export default function Home() {
               <div className="welcome-row"><div><div className="eyebrow"><Sparkles size={14} /> SENTINEL AI WORKSPACE</div><h1>{selectedPage?.title ?? "Settings"}</h1><p>{selectedPage?.description ?? "Configure your research workspace."}</p></div><div className="date-button"><Activity size={15} /> Research mode</div></div>
               <div className="notice"><LockKeyhole size={17} /><p><b>Evidence-led reporting.</b> This workspace only displays results produced by actual dataset analysis. No sample threats or invented model scores are shown.</p></div>
               {active === "Datasets" ? <DatasetWorkbench /> : active === "AI Predictions" ? <HistoryWorkbench mode="predictions" /> : active === "Threat Alerts" ? <HistoryWorkbench mode="alerts" /> : active === "Model Performance" ? <ModelPerformance /> : active === "Settings" ? (
+                <article className="panel settings-panel">
+                  <div className="panel-heading"><div><h2>Appearance</h2><p>Choose how Sentinel AI looks on this device.</p></div></div>
+                  <div className="theme-setting">
+                    <div className="theme-setting-copy"><b>Dark mode</b><span>Use a darker colour theme across the entire workspace.</span></div>
+                    <button type="button" role="switch" aria-checked={theme === "dark"} aria-label="Enable dark mode" className={`theme-switch ${theme === "dark" ? "is-on" : ""}`} onClick={() => changeTheme(theme === "dark" ? "light" : "dark")}><span /></button>
+                  </div>
+                  <p className="performance-muted">Your theme preference is saved on this device and will be restored when you return.</p>
+                  <div className="theme-preview"><span>{theme === "dark" ? <Moon size={16}/> : <Sun size={16}/>}</span><div><b>{theme === "dark" ? "Dark theme enabled" : "Light theme enabled"}</b><small>Applies to dashboard pages, tables, forms and panels.</small></div></div>
+                </article>
+              ) : (
                 <article className="panel empty-alerts" style={{ minHeight: 270, height: "auto", padding: 30 }}>
                   <div className="empty-icon"><ShieldCheck size={22} /></div>
-                  <b>{selectedPage?.detail ?? "Settings are not configured yet."}</b>
-                  <p style={{ maxWidth: 520, lineHeight: 1.7 }}>{selectedPage?.next ?? "Workspace configuration controls will be added after core analysis and storage are connected."}</p>
+                  <b>{selectedPage?.detail ?? "This section is not configured yet."}</b>
+                  <p style={{ maxWidth: 520, lineHeight: 1.7 }}>{selectedPage?.next ?? "This workspace section is not configured yet."}</p>
                 </article>
               )}
             </>
