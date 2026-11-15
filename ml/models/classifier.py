@@ -83,6 +83,28 @@ def train_random_forest(
         except ValueError:
             roc_auc_note = "Not available: ROC-AUC could not be calculated for this test partition."
 
+    minimum_recommended_test_support = 20
+    class_metrics = []
+    evaluation_warnings = []
+    for index in range(len(precision)):
+        class_name = str(prepared.label_encoder.classes_[index])
+        class_support = int(support[index])
+        warning = None
+        if class_support < minimum_recommended_test_support:
+            warning = (
+                f"Only {class_support} test examples for {class_name}; "
+                f"at least {minimum_recommended_test_support} are recommended for a more informative class-level estimate."
+            )
+            evaluation_warnings.append(warning)
+        class_metrics.append({
+            "class_name": class_name,
+            "precision": float(precision[index]),
+            "recall": float(recall[index]),
+            "f1": float(f1[index]),
+            "support": class_support,
+            "evaluation_warning": warning,
+        })
+
     metrics: dict[str, Any] = {
         "accuracy": float(accuracy_score(prepared.y_test, predictions)),
         "precision_macro": float(np.mean(precision)),
@@ -91,19 +113,14 @@ def train_random_forest(
         "false_positive_rate_macro": float(np.mean(false_positive_rates)),
         "roc_auc_macro_ovr": roc_auc_macro,
         "roc_auc_note": roc_auc_note,
-        "class_metrics": [
-            {
-                "class_name": str(prepared.label_encoder.classes_[index]),
-                "precision": float(precision[index]),
-                "recall": float(recall[index]),
-                "f1": float(f1[index]),
-                "support": int(support[index]),
-            }
-            for index in range(len(precision))
-        ],
+        "class_metrics": class_metrics,
+        "minimum_recommended_test_support": minimum_recommended_test_support,
+        "evaluation_warnings": evaluation_warnings,
         "confusion_matrix": matrix.tolist(),
         "test_sample_count": int(len(prepared.y_test)),
         "metric_source": "held_out_test_partition",
+        "split_strategy": prepared.split_strategy,
+        "split_warnings": prepared.evaluation_warnings,
         "test_actual_labels": [
             str(value) for value in prepared.label_encoder.inverse_transform(prepared.y_test)
         ],
