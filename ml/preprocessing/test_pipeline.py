@@ -86,3 +86,17 @@ def test_group_holdout_keeps_groups_separate_and_excludes_group_feature() -> Non
     assert len(set(result.y_test)) == 2
     assert any("Group-aware holdout used 'capture_id'" in warning for warning in result.evaluation_warnings)
 
+
+
+def test_replacement_character_in_attack_labels_is_normalized() -> None:
+    frame = pd.DataFrame(
+        {
+            "bytes": list(range(12)),
+            "label": ["Benign"] * 5 + ["Web Attack � Brute Force"] * 4 + ["Web Attack � XSS"] * 3,
+        }
+    )
+    result = prepare_classification_data(frame, "label", random_state=7)
+
+    assert list(result.label_encoder.classes_) == [
+        "Benign", "Web Attack - Brute Force", "Web Attack - XSS"
+    ]
