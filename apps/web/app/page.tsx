@@ -152,7 +152,6 @@ export default function Home() {
   }, [experiments]);
 
   useEffect(() => {
-    if (!notificationOpen) return;
     let current = true;
     setNotificationLoading(true);
     setNotificationError("");
