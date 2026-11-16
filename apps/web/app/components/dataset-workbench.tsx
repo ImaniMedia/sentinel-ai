@@ -171,7 +171,6 @@ export default function DatasetWorkbench() {
         <h3 style={{ fontSize: 13, marginTop: 18 }}>Evaluation limitations</h3>
         <ul style={{ paddingLeft: 18, color: "#64748b", fontSize: 11, lineHeight: 1.7 }}>{analysis.limitations.map((item) => <li key={item}>{item}</li>)}</ul>
       </div>}
-      <p style={{ color: "#8993a5", fontSize: 10, marginTop: 12 }}>API endpoint: {API_BASE}. Configure NEXT_PUBLIC_SENTINEL_API_URL when the API is hosted away from this device.</p>
     </section>
   );
 }
