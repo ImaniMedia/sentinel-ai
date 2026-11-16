@@ -162,7 +162,7 @@ export default function Home() {
           <div className="top-actions">
             <div className="system-status"><span className="status-dot" /> Research mode</div>
             <button className="icon-button" aria-label="Help"><CircleHelp size={18} /></button>
-            <button className="icon-button" aria-label="Notifications"><Bell size={18} /></button>
+            <button className="icon-button" type="button" aria-label="Open threat notifications" title="View threat alerts" onClick={() => { setActive("Threat Alerts"); setMenuOpen(false); }}><Bell size={18} /></button>
             <div className="top-avatar">SA</div>
           </div>
         </header>
