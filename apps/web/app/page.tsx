@@ -88,23 +88,26 @@ export default function Home() {
   useEffect(() => {
     if (active !== "Overview") return;
     let current = true;
-    setDashboardLoading(true);
-    setDashboardError("");
-    Promise.all([
-      fetch(`${API_BASE}/api/v1/predictions?limit=7`).then(async (response) => {
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(payload.detail || "Could not load analysis history.");
-        return payload.items as DashboardAnalysis[];
-      }),
-      fetch(`${API_BASE}/api/v1/alerts?status=open&limit=5`).then(async (response) => {
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(payload.detail || "Could not load threat alerts.");
-        return payload.items as DashboardAlert[];
-      }),
-    ]).then(([analyses, alerts]) => {
+    Promise.resolve().then(() => {
       if (!current) return;
-      setDashboardAnalyses(analyses || []);
-      setDashboardAlerts(alerts || []);
+      setDashboardLoading(true);
+      setDashboardError("");
+      return Promise.all([
+        fetch(`${API_BASE}/api/v1/predictions?limit=7`).then(async (response) => {
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(payload.detail || "Could not load analysis history.");
+          return payload.items as DashboardAnalysis[];
+        }),
+        fetch(`${API_BASE}/api/v1/alerts?status=open&limit=5`).then(async (response) => {
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(payload.detail || "Could not load threat alerts.");
+          return payload.items as DashboardAlert[];
+        }),
+      ]).then(([analyses, alerts]) => {
+        if (!current) return;
+        setDashboardAnalyses(analyses || []);
+        setDashboardAlerts(alerts || []);
+      });
     }).catch((error: unknown) => {
       if (!current) return;
       setDashboardError(error instanceof Error ? error.message : "Dashboard data could not be loaded.");
