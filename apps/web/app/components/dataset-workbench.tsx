@@ -53,7 +53,9 @@ const API_BASE = (process.env.NEXT_PUBLIC_SENTINEL_API_URL || "http://localhost:
 function displayClassName(name: string) {
   return name.replace(/\uFFFD/g, "-").replace(/\s*-\s*/g, " - ");
 }
+function percent(value: number) {
   return `${(value * 100).toFixed(1)}%`;
+}
 }
 
 export default function DatasetWorkbench() {
