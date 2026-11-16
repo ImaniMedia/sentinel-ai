@@ -300,7 +300,7 @@ export default function Home() {
                 <div className="date-button"><Activity size={15} /> Offline analysis</div>
               </div>
               <div className="notice"><LockKeyhole size={17} /><p><b>Research environment is ready.</b> Metrics and alerts will appear after you upload and analyse a dataset. Nothing here is simulated.</p></div>
-              <div className="section-heading"><div><h2>Workspace snapshot</h2><p>Results from your analysed datasets</p></div><span className="empty-chip">Awaiting first analysis</span></div>
+              <div className="section-heading"><div><h2>Workspace snapshot</h2><p>Results from your analysed datasets</p></div></div>
               <OverviewSnapshot />
               <div className="dashboard-grid">
                 <article className="panel activity-panel">
