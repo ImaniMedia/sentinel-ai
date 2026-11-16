@@ -37,6 +37,7 @@ export default function OverviewSnapshot() {
   ];
 
   return <>
+    <div className="snapshot-status" role="status">{status === "loading" ? "Checking analysis status…" : status === "unavailable" ? "Metrics unavailable" : data?.analysis_count === 0 ? "Awaiting first analysis" : `${data?.analysis_count ?? 0} saved ${data?.analysis_count === 1 ? "analysis" : "analyses"}`}</div>
     <div className="metric-grid">
       {metrics.map((metric) => { const Icon = metric.icon; return <article className="metric-card" key={metric.label}><div className="metric-top"><span>{metric.label}</span><i><Icon size={18} /></i></div><div className="metric-value">{metric.value}</div></article>; })}
     </div>
