@@ -25,7 +25,8 @@ const API_BASE = (process.env.NEXT_PUBLIC_SENTINEL_API_URL || "http://localhost:
 const panel = { background: "#fff", border: "1px solid #e9edf3", borderRadius: 10, padding: 16, marginTop: 12 } as const;
 const small = { fontSize: 11, color: "#8993a5" } as const;
 const button = { border: "1px solid #dbe3ef", background: "#fff", color: "#3c5e8d", padding: "7px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer" } as const;
-const pct = (n: number) => `${(n * 100).toFixed(1)}%`;\nconst displayClassName = (name: string) => name.replace(/\\uFFFD/g, "-").replace(/\\s*-\\s*/g, " - ");
+const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
+const displayClassName = (name: string) => name.replace(/\uFFFD/g, "-").replace(/\s*-\s*/g, " - ");
 
 export default function HistoryWorkbench({ mode }: { mode: "predictions" | "alerts" }) {
   const [analyses, setAnalyses] = useState<AnalysisItem[]>([]);
