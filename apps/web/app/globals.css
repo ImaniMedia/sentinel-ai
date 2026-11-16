@@ -105,3 +105,16 @@ footer{font-size:10px;color:#a0a9b7;text-align:center;padding:26px 0 5px}footer 
 :root[data-theme="dark"] .experiment-form-grid input,:root[data-theme="dark"] .experiment-form-grid select,:root[data-theme="dark"] .experiment-form-grid textarea,:root[data-theme="dark"] .experiment-card-actions select{background:#0f1a2a;color:var(--ink);border-color:#34445c}
 :root[data-theme="dark"] .experiment-cancel,:root[data-theme="dark"] .experiment-card-actions button{background:#172437;color:var(--ink);border-color:var(--line)}
 @media(max-width:700px){.notification-popover{right:-8px;top:37px}.experiment-form-grid{grid-template-columns:1fr}.experiment-notes{grid-column:auto}.experiment-meta{display:grid;gap:6px}}
+/* Snapshot state and readable analysis/alert records in both themes */
+.snapshot-status{display:inline-flex;align-items:center;margin:0 0 12px;padding:6px 10px;border-radius:20px;background:#f4f6f9;color:#58657a;font-size:10px;font-weight:600}
+.record-card{color:#172033}
+.record-title{color:#172033}
+.record-description,.record-meta{color:#526078}
+:root[data-theme="dark"] .snapshot-status{background:#1b293d;color:#c5d2e3}
+:root[data-theme="dark"] .record-card{background:#121c2c!important;border-color:#263449!important;color:#e5edf7!important}
+:root[data-theme="dark"] .record-card .record-title{color:#e5edf7!important}
+:root[data-theme="dark"] .record-card .record-description,:root[data-theme="dark"] .record-card .record-meta{color:#aebdd0!important}
+:root[data-theme="dark"] .record-card [style*="color: rgb(23, 32, 51)"]{color:#e5edf7!important}
+:root[data-theme="dark"] .record-card [style*="color: rgb(82, 96, 120)"]{color:#aebdd0!important}
+:root[data-theme="dark"] .record-card [style*="background: rgb(247, 249, 252)"]{background:#1b293d!important}
+:root[data-theme="dark"] .record-card [style*="background: rgb(232, 245, 237)"]{background:#18372f!important}
