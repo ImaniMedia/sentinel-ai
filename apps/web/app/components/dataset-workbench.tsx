@@ -50,7 +50,9 @@ type Analysis = {
 
 const API_BASE = (process.env.NEXT_PUBLIC_SENTINEL_API_URL || "http://localhost:8000").replace(/\/$/, "");
 
-function displayClassName(name: string) {\n  return name.replace(/\\uFFFD/g, "-").replace(/\\s*-\\s*/g, " - ");\n}\n\nfunction percent(value: number) {
+function displayClassName(name: string) {
+  return name.replace(/\uFFFD/g, "-").replace(/\s*-\s*/g, " - ");
+}
   return `${(value * 100).toFixed(1)}%`;
 }
 
