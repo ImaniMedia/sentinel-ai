@@ -68,8 +68,7 @@ def prepare_classification_data(
     if len(data) < 4:
         raise ValueError("At least 4 labelled rows are required")
 
-    y_raw = data[label_column].astype(str).str.strip()
-    valid_labels = y_raw.ne("")
+    # Some public intrusion datasets contain U+FFFD where a separator was\n    # corrupted during CSV export (for example, "Web Attack � XSS").\n    # Replace only that known encoding placeholder; keep other labels intact.\n    y_raw = (\n        data[label_column]\n        .astype(str)\n        .str.strip()\n        .str.replace("\\uFFFD", "-", regex=False)\n        .str.replace(r"\\s*-\\s*", " - ", regex=True)\n    )\n    valid_labels = y_raw.ne("")
     data = data.loc[valid_labels].copy()
     y_raw = y_raw.loc[valid_labels]
     if y_raw.nunique() < 2:
