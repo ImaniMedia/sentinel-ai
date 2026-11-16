@@ -29,6 +29,16 @@ type DashboardAlert = {
   sample_count: number;
   status: string;
 };
+type ResearchExperiment = {
+  id: string;
+  name: string;
+  dataset: string;
+  model: string;
+  status: "planned" | "running" | "completed";
+  notes: string;
+  created_at: string;
+};
+
 
 const API_BASE = (process.env.NEXT_PUBLIC_SENTINEL_API_URL || "http://localhost:8000").replace(/\/$/, "");
 
@@ -84,6 +94,17 @@ export default function Home() {
   const [dashboardAlerts, setDashboardAlerts] = useState<DashboardAlert[]>([]);
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState("");
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState<DashboardAlert[]>([]);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationError, setNotificationError] = useState("");
+  const [experiments, setExperiments] = useState<ResearchExperiment[]>([]);
+  const [experimentName, setExperimentName] = useState("");
+  const [experimentDataset, setExperimentDataset] = useState("");
+  const [experimentModel, setExperimentModel] = useState("Random Forest");
+  const [experimentNotes, setExperimentNotes] = useState("");
+  const [editingExperiment, setEditingExperiment] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (active !== "Overview") return;
@@ -116,6 +137,84 @@ export default function Home() {
     });
     return () => { current = false; };
   }, [active]);
+
+  useEffect(() => {
+    try {
+      const savedExperiments = window.localStorage.getItem("sentinel-experiments");
+      if (savedExperiments) setExperiments(JSON.parse(savedExperiments) as ResearchExperiment[]);
+    } catch {
+      setExperiments([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem("sentinel-experiments", JSON.stringify(experiments));
+  }, [experiments]);
+
+  useEffect(() => {
+    if (!notificationOpen) return;
+    let current = true;
+    setNotificationLoading(true);
+    setNotificationError("");
+    fetch(`${API_BASE}/api/v1/alerts?limit=100`)
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.detail || "Could not load notification history.");
+        return payload.items as DashboardAlert[];
+      })
+      .then((items) => { if (current) setNotifications(items || []); })
+      .catch((error: unknown) => {
+        if (current) setNotificationError(error instanceof Error ? error.message : "Notifications could not be loaded.");
+      })
+      .finally(() => { if (current) setNotificationLoading(false); });
+    return () => { current = false; };
+  }, [notificationOpen]);
+
+  async function markNotificationReviewed(alertId: number) {
+    setNotificationError("");
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/alerts/${alertId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "reviewed" }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.detail || "Could not update notification.");
+      setNotifications((items) => items.map((item) => item.id === alertId ? payload : item));
+      setDashboardAlerts((items) => items.filter((item) => item.id !== alertId));
+    } catch (error) {
+      setNotificationError(error instanceof Error ? error.message : "Could not update notification.");
+    }
+  }
+
+  function saveExperiment() {
+    const name = experimentName.trim();
+    if (!name) return;
+    if (editingExperiment) {
+      setExperiments((items) => items.map((item) => item.id === editingExperiment
+        ? { ...item, name, dataset: experimentDataset.trim(), model: experimentModel, notes: experimentNotes.trim() }
+        : item));
+    } else {
+      setExperiments((items) => [{
+        id: `exp-${Date.now()}`, name, dataset: experimentDataset.trim(),
+        model: experimentModel, status: "planned", notes: experimentNotes.trim(),
+        created_at: new Date().toISOString(),
+      }, ...items]);
+    }
+    setExperimentName("");
+    setExperimentDataset("");
+    setExperimentModel("Random Forest");
+    setExperimentNotes("");
+    setEditingExperiment(null);
+  }
+
+  function editExperiment(item: ResearchExperiment) {
+    setEditingExperiment(item.id);
+    setExperimentName(item.name);
+    setExperimentDataset(item.dataset);
+    setExperimentModel(item.model);
+    setExperimentNotes(item.notes);
+  }
 
   useEffect(() => {
     const saved = window.localStorage.getItem("sentinel-theme");
@@ -165,7 +264,25 @@ export default function Home() {
           <div className="top-actions">
             <div className="system-status"><span className="status-dot" /> Research mode</div>
             <button className="icon-button" aria-label="Help"><CircleHelp size={18} /></button>
-            <button className="icon-button" type="button" aria-label="Open threat notifications" title="View threat alerts" onClick={() => { setActive("Threat Alerts"); setMenuOpen(false); }}><Bell size={18} /></button>
+            <div className="notification-wrap">
+              <button className="icon-button notification-trigger" type="button" aria-label="Open notifications" aria-expanded={notificationOpen} title="Notifications" onClick={() => setNotificationOpen((open) => !open)}>
+                <Bell size={18} />
+                {notifications.filter((item) => item.status === "open").length > 0 && <span className="notification-count">{notifications.filter((item) => item.status === "open").length > 99 ? "99+" : notifications.filter((item) => item.status === "open").length}</span>}
+              </button>
+              {notificationOpen && <div className="notification-popover" role="dialog" aria-label="Notification centre">
+                <div className="notification-heading"><div><b>Notifications</b><small>{notifications.filter((item) => item.status === "open").length} unread · {notifications.length} total</small></div><button type="button" onClick={() => setNotificationOpen(false)} aria-label="Close notifications"><X size={16} /></button></div>
+                {notificationError && <p className="notification-error" role="alert">{notificationError}</p>}
+                {notificationLoading ? <p className="notification-empty">Loading notification history…</p> : notifications.length === 0 && !notificationError ? <p className="notification-empty">No notifications yet. Alerts from completed dataset analyses will appear here.</p> : <div className="notification-list">
+                  {notifications.slice(0, 10).map((item) => <div className={`notification-item ${item.status === "open" ? "unread" : ""}`} key={item.id}>
+                    <div className="notification-item-top"><b>{item.title}</b><span>{item.status}</span></div>
+                    <p>{item.description}</p>
+                    <small>{item.severity} · {item.flagged_count.toLocaleString()} flagged · {new Date(item.created_at).toLocaleString()}</small>
+                    {item.status === "open" && <button type="button" onClick={() => void markNotificationReviewed(item.id)}>Mark as reviewed</button>}
+                  </div>)}
+                </div>}
+                <button className="notification-footer" type="button" onClick={() => { setActive("Threat Alerts"); setNotificationOpen(false); }}>Open full alert history <ArrowUpRight size={14} /></button>
+              </div>}
+            </div>
             <div className="top-avatar">SA</div>
           </div>
         </header>
@@ -217,7 +334,27 @@ export default function Home() {
             <>
               <div className="welcome-row"><div><div className="eyebrow"><Sparkles size={14} /> SENTINEL AI WORKSPACE</div><h1>{selectedPage?.title ?? "Settings"}</h1><p>{selectedPage?.description ?? "Configure your research workspace."}</p></div><div className="date-button"><Activity size={15} /> Research mode</div></div>
               <div className="notice"><LockKeyhole size={17} /><p><b>Evidence-led reporting.</b> This workspace only displays results produced by actual dataset analysis. No sample threats or invented model scores are shown.</p></div>
-              {active === "Datasets" ? <DatasetWorkbench /> : active === "AI Predictions" ? <HistoryWorkbench mode="predictions" /> : active === "Threat Alerts" ? <HistoryWorkbench mode="alerts" /> : active === "Model Performance" ? <ModelPerformance /> : active === "Settings" ? (
+              {active === "Datasets" ? <DatasetWorkbench /> : active === "AI Predictions" ? <HistoryWorkbench mode="predictions" /> : active === "Threat Alerts" ? <HistoryWorkbench mode="alerts" /> : active === "Model Performance" ? <ModelPerformance /> : active === "Research Lab" ? (
+                <section className="research-lab">
+                  <div className="panel research-form">
+                    <div className="panel-heading"><div><h2>{editingExperiment ? "Edit experiment" : "Create experiment"}</h2><p>Record a repeatable model evaluation and track its progress.</p></div><span className="empty-chip">Saved on this device</span></div>
+                    <div className="experiment-form-grid">
+                      <label>Experiment name<input value={experimentName} onChange={(event) => setExperimentName(event.target.value)} placeholder="e.g. CICIDS2017 Random Forest baseline" /></label>
+                      <label>Dataset / version<input value={experimentDataset} onChange={(event) => setExperimentDataset(event.target.value)} placeholder="e.g. CICIDS2017 · 10k sample" /></label>
+                      <label>Model<select value={experimentModel} onChange={(event) => setExperimentModel(event.target.value)}><option>Random Forest</option><option>Isolation Forest</option><option>Combined pipeline</option><option>Other</option></select></label>
+                      <label className="experiment-notes">Notes<textarea value={experimentNotes} onChange={(event) => setExperimentNotes(event.target.value)} placeholder="Hypothesis, configuration, split strategy or observations…" rows={3} /></label>
+                    </div>
+                    <div className="experiment-form-actions"><button type="button" className="experiment-save" onClick={saveExperiment} disabled={!experimentName.trim()}>{editingExperiment ? "Save changes" : "Add experiment"}</button>{editingExperiment && <button type="button" className="experiment-cancel" onClick={() => { setEditingExperiment(null); setExperimentName(""); setExperimentDataset(""); setExperimentModel("Random Forest"); setExperimentNotes(""); }}>Cancel</button>}</div>
+                  </div>
+                  <div className="research-list-heading"><div><h2>Experiment tracker</h2><p>{experiments.length} saved {experiments.length === 1 ? "experiment" : "experiments"}</p></div></div>
+                  {experiments.length === 0 ? <div className="panel research-empty"><div className="empty-icon"><BrainCircuit size={22} /></div><b>No experiments recorded yet</b><p>Create an experiment above to document its dataset, model, notes and progress. Records stay in this browser on this device.</p></div> : <div className="experiment-list">{experiments.map((item) => <article className="panel experiment-card" key={item.id}>
+                    <div className="experiment-card-heading"><div><h3>{item.name}</h3><small>Created {new Date(item.created_at).toLocaleDateString()}</small></div><span className={`experiment-status status-${item.status}`}>{item.status}</span></div>
+                    <div className="experiment-meta"><span><b>Dataset:</b> {item.dataset || "Not specified"}</span><span><b>Model:</b> {item.model}</span></div>
+                    {item.notes && <p className="experiment-notes-text">{item.notes}</p>}
+                    <div className="experiment-card-actions"><label>Status<select value={item.status} onChange={(event) => setExperiments((items) => items.map((entry) => entry.id === item.id ? { ...entry, status: event.target.value as ResearchExperiment["status"] } : entry))}><option value="planned">Planned</option><option value="running">Running</option><option value="completed">Completed</option></select></label><button type="button" onClick={() => editExperiment(item)}>Edit</button><button type="button" className="experiment-delete" onClick={() => { setExperiments((items) => items.filter((entry) => entry.id !== item.id)); if (editingExperiment === item.id) setEditingExperiment(null); }}>Delete</button></div>
+                  </article>)}</div>}
+                </section>
+              ) : active === "Settings" ? (
                 <article className="panel settings-panel">
                   <div className="panel-heading"><div><h2>Appearance</h2><p>Choose how Sentinel AI looks on this device.</p></div></div>
                   <div className="theme-setting">
