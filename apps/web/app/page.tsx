@@ -96,7 +96,7 @@ export default function Home() {
   const [dashboardError, setDashboardError] = useState("");
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [notifications, setNotifications] = useState<DashboardAlert[]>([]);
-  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationLoading, setNotificationLoading] = useState(true);
   const [notificationError, setNotificationError] = useState("");
   const [experiments, setExperiments] = useState<ResearchExperiment[]>([]);
   const [experimentsLoaded, setExperimentsLoaded] = useState(false);
@@ -140,14 +140,16 @@ export default function Home() {
   }, [active]);
 
   useEffect(() => {
-    try {
-      const savedExperiments = window.localStorage.getItem("sentinel-experiments");
-      if (savedExperiments) setExperiments(JSON.parse(savedExperiments) as ResearchExperiment[]);
-    } catch {
-      setExperiments([]);
-    } finally {
-      setExperimentsLoaded(true);
-    }
+    Promise.resolve().then(() => {
+      try {
+        const savedExperiments = window.localStorage.getItem("sentinel-experiments");
+        if (savedExperiments) setExperiments(JSON.parse(savedExperiments) as ResearchExperiment[]);
+      } catch {
+        setExperiments([]);
+      } finally {
+        setExperimentsLoaded(true);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -156,15 +158,17 @@ export default function Home() {
 
   useEffect(() => {
     let current = true;
-    setNotificationLoading(true);
-    setNotificationError("");
     fetch(`${API_BASE}/api/v1/alerts?limit=100`)
       .then(async (response) => {
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.detail || "Could not load notification history.");
         return payload.items as DashboardAlert[];
       })
-      .then((items) => { if (current) setNotifications(items || []); })
+      .then((items) => {
+        if (!current) return;
+        setNotifications(items || []);
+        setNotificationError("");
+      })
       .catch((error: unknown) => {
         if (current) setNotificationError(error instanceof Error ? error.message : "Notifications could not be loaded.");
       })
