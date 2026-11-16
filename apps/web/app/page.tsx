@@ -6,8 +6,8 @@ import HistoryWorkbench from "./components/history-workbench";
 import OverviewSnapshot from "./components/overview-snapshot";
 import ModelPerformance from "./components/model-performance";
 import {
-  Activity, AlertTriangle, ArrowUpRight, Bell, BrainCircuit, ChevronDown,
-  CircleHelp, FileUp, Gauge, LayoutDashboard, LockKeyhole, Menu,
+  Activity, AlertTriangle, ArrowUpRight, Bell, BrainCircuit,
+  FileUp, Gauge, LayoutDashboard, LockKeyhole, Menu,
   Settings, Shield, ShieldCheck, SlidersHorizontal, Sparkles, X, Moon, Sun,
 } from "lucide-react";
 
@@ -258,7 +258,7 @@ export default function Home() {
         <div className="sidebar-bottom">
           <div className="environment-card"><span className="status-dot" /><div><b>Research environment</b><small>Offline dataset mode</small></div></div>
           <button className="nav-item" onClick={() => { setActive("Settings"); setMenuOpen(false); }}><Settings size={18} /><span>Settings</span></button>
-          <div className="profile"><div className="avatar">SA</div><div><b>Security Analyst</b><small>Research workspace</small></div><ChevronDown size={16} /></div>
+          <div className="profile" aria-label="Current workspace profile"><div className="avatar">SA</div><div><b>Security Analyst</b><small>Research workspace</small></div></div>
         </div>
       </aside>
 
@@ -269,7 +269,6 @@ export default function Home() {
           <div className="breadcrumbs">Workspace <span>/</span> <b>{active}</b></div>
           <div className="top-actions">
             <div className="system-status"><span className="status-dot" /> Research mode</div>
-            <button className="icon-button" aria-label="Help"><CircleHelp size={18} /></button>
             <div className="notification-wrap">
               <button className="icon-button notification-trigger" type="button" aria-label="Open notifications" aria-expanded={notificationOpen} title="Notifications" onClick={() => setNotificationOpen((open) => !open)}>
                 <Bell size={18} />
