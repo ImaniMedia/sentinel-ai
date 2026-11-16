@@ -101,7 +101,7 @@ export default function DatasetWorkbench() {
   const metricStyle = { border: "1px solid #e9edf3", borderRadius: 8, padding: 12, minWidth: 0 } as const;
 
   return (
-    <section>
+    <section className="dataset-workbench">
       <div className="notice"><strong>Dataset workflow.</strong><span>Upload a labelled network-flow CSV. Files are processed in memory by the API and are not stored.</span></div>
       <div style={panelStyle}>
         <h2 style={{ margin: "0 0 6px", fontSize: 15 }}>Inspect a dataset</h2>
