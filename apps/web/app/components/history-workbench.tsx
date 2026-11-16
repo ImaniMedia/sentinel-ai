@@ -100,7 +100,7 @@ export default function HistoryWorkbench({ mode }: { mode: "predictions" | "aler
       const classification = item.evaluation?.classification;
       const classMetrics = classification?.class_metrics || [];
       const confusion = classification?.confusion_matrix || [];
-      return <article key={item.id} style={{ ...panel, color: "#172033" }}>
+      return <article key={item.id} className="record-card" style={{ ...panel, color: "#172033" }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}><b style={{ fontSize: 13, color: "#172033" }}>{item.filename}</b><span style={small}>Analysis #{item.id} · {new Date(item.created_at).toLocaleString()}</span></div>
         <p style={{ ...small, color: "#526078", lineHeight: 1.6 }}>{item.row_count.toLocaleString()} rows · Classes: {item.classes.join(", ")}</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(100px,1fr))", gap: 8, marginTop: 12 }}>
@@ -136,10 +136,10 @@ export default function HistoryWorkbench({ mode }: { mode: "predictions" | "aler
         </details>}
       </article>;
     })}
-    {mode === "alerts" && alerts.map((item) => <article key={item.id} style={panel}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}><b style={{ fontSize: 13 }}>{item.title}</b><span className="empty-chip">{item.severity} · {item.status}</span></div>
-      <p style={{ fontSize: 11, lineHeight: 1.6, color: "#64748b" }}>{item.description}</p>
-      <p style={small}>Analysis #{item.analysis_id} · {item.flagged_count} flagged of {item.sample_count} scored · {new Date(item.created_at).toLocaleString()}</p>
+    {mode === "alerts" && alerts.map((item) => <article key={item.id} className="record-card" style={{ ...panel, color: "#172033" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}><b className="record-title" style={{ fontSize: 13 }}>{item.title}</b><span className="empty-chip">{item.severity} · {item.status}</span></div>
+      <p className="record-description" style={{ fontSize: 11, lineHeight: 1.6 }}>{item.description}</p>
+      <p className="record-meta" style={small}>Analysis #{item.analysis_id} · {item.flagged_count} flagged of {item.sample_count} scored · {new Date(item.created_at).toLocaleString()}</p>
       {item.status === "open" && <div style={{ display: "flex", gap: 8, marginTop: 12 }}><button style={button} onClick={() => void changeStatus(item.id, "reviewed")}>Mark reviewed</button><button style={button} onClick={() => void changeStatus(item.id, "dismissed")}>Dismiss</button></div>}
     </article>)}
   </section>;
