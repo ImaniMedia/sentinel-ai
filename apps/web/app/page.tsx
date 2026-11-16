@@ -99,6 +99,7 @@ export default function Home() {
   const [notificationLoading, setNotificationLoading] = useState(false);
   const [notificationError, setNotificationError] = useState("");
   const [experiments, setExperiments] = useState<ResearchExperiment[]>([]);
+  const [experimentsLoaded, setExperimentsLoaded] = useState(false);
   const [experimentName, setExperimentName] = useState("");
   const [experimentDataset, setExperimentDataset] = useState("");
   const [experimentModel, setExperimentModel] = useState("Random Forest");
@@ -144,12 +145,14 @@ export default function Home() {
       if (savedExperiments) setExperiments(JSON.parse(savedExperiments) as ResearchExperiment[]);
     } catch {
       setExperiments([]);
+    } finally {
+      setExperimentsLoaded(true);
     }
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem("sentinel-experiments", JSON.stringify(experiments));
-  }, [experiments]);
+    if (experimentsLoaded) window.localStorage.setItem("sentinel-experiments", JSON.stringify(experiments));
+  }, [experiments, experimentsLoaded]);
 
   useEffect(() => {
     let current = true;
