@@ -30,7 +30,7 @@ type DashboardAlert = {
   status: string;
 };
 
-const API_BASE = (process.env.NEXT_PUBLIC_SENTINEL_API_URL || "http://localhost:8000").replace(/\\/$/, "");
+const API_BASE = (process.env.NEXT_PUBLIC_SENTINEL_API_URL || "http://localhost:8000").replace(/\/$/, "");
 
 const navigation = [
   { label: "Overview", icon: LayoutDashboard },
