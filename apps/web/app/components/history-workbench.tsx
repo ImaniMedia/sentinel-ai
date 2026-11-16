@@ -25,7 +25,7 @@ const API_BASE = (process.env.NEXT_PUBLIC_SENTINEL_API_URL || "http://localhost:
 const panel = { background: "#fff", border: "1px solid #e9edf3", borderRadius: 10, padding: 16, marginTop: 12 } as const;
 const small = { fontSize: 11, color: "#8993a5" } as const;
 const button = { border: "1px solid #dbe3ef", background: "#fff", color: "#3c5e8d", padding: "7px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer" } as const;
-const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
+const pct = (n: number) => `${(n * 100).toFixed(1)}%`;\nconst displayClassName = (name: string) => name.replace(/\\uFFFD/g, "-").replace(/\\s*-\\s*/g, " - ");
 
 export default function HistoryWorkbench({ mode }: { mode: "predictions" | "alerts" }) {
   const [analyses, setAnalyses] = useState<AnalysisItem[]>([]);
@@ -102,7 +102,7 @@ export default function HistoryWorkbench({ mode }: { mode: "predictions" | "aler
       const confusion = classification?.confusion_matrix || [];
       return <article key={item.id} className="record-card" style={{ ...panel, color: "#172033" }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}><b style={{ fontSize: 13, color: "#172033" }}>{item.filename}</b><span style={small}>Analysis #{item.id} · {new Date(item.created_at).toLocaleString()}</span></div>
-        <p style={{ ...small, color: "#526078", lineHeight: 1.6 }}>{item.row_count.toLocaleString()} rows · Classes: {item.classes.join(", ")}</p>
+        <p style={{ ...small, color: "#526078", lineHeight: 1.6 }}>{item.row_count.toLocaleString()} rows · Classes: {item.classes.map(displayClassName).join(", ")}</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(100px,1fr))", gap: 8, marginTop: 12 }}>
           {[["Accuracy", pct(item.accuracy)], ["Precision", pct(item.precision_macro)], ["Recall", pct(item.recall_macro)], ["Macro F1", pct(item.f1_macro)], ["Anomalies", `${item.anomaly_count}/${item.anomaly_sample_count}`]].map(([label, value]) => <div key={label} style={{ background: "#f7f9fc", borderRadius: 7, padding: 10 }}><div style={small}>{label}</div><strong style={{ display: "block", marginTop: 5, fontSize: 16, color: "#172033" }}>{value}</strong></div>)}
         </div>
@@ -115,7 +115,7 @@ export default function HistoryWorkbench({ mode }: { mode: "predictions" | "aler
               <tbody>{classMetrics.map((metric, index) => {
                 const predictedCount = confusion.reduce((total, row) => total + (Number(row[index]) || 0), 0);
                 return <tr key={metric.class_name}>
-                  <td style={{ padding: "10px 7px", borderBottom: "1px solid #edf0f5", color: "#172033", fontWeight: 600 }}>{metric.class_name}</td>
+                  <td style={{ padding: "10px 7px", borderBottom: "1px solid #edf0f5", color: "#172033", fontWeight: 600 }}>{displayClassName(metric.class_name)}</td>
                   <td style={{ padding: "10px 7px", borderBottom: "1px solid #edf0f5", color: "#172033" }}>{metric.support.toLocaleString()}</td>
                   <td style={{ padding: "10px 7px", borderBottom: "1px solid #edf0f5", color: "#172033" }}>{confusion.length ? predictedCount.toLocaleString() : "—"}</td>
                   {[metric.precision, metric.recall, metric.f1].map((value, valueIndex) => <td key={valueIndex} style={{ padding: "10px 7px", borderBottom: "1px solid #edf0f5", color: "#172033" }}>{pct(value)}</td>)}
@@ -131,7 +131,7 @@ export default function HistoryWorkbench({ mode }: { mode: "predictions" | "aler
           <summary style={{ cursor: "pointer", color: "#365d91", fontSize: 12, fontWeight: 600 }}>View confusion matrix</summary>
           <p style={{ ...small, color: "#526078", marginTop: 6 }}>Rows are actual classes; columns are model-predicted classes. Class order: {item.classes.join(", ")}.</p>
           <div style={{ overflowX: "auto", marginTop: 8 }}><table style={{ borderCollapse: "collapse", fontSize: 11, minWidth: "100%" }}>
-            <tbody>{confusion.map((row, rowIndex) => <tr key={rowIndex}><th style={{ padding: 7, textAlign: "left", color: "#526078", whiteSpace: "nowrap" }}>{item.classes[rowIndex]}</th>{row.map((count, colIndex) => <td key={colIndex} style={{ padding: 7, textAlign: "center", color: "#172033", background: rowIndex === colIndex ? "#e8f5ed" : "#f7f9fc", border: "1px solid #e5eaf1" }}>{count.toLocaleString()}</td>)}</tr>)}</tbody>
+            <tbody>{confusion.map((row, rowIndex) => <tr key={rowIndex}><th style={{ padding: 7, textAlign: "left", color: "#526078", whiteSpace: "nowrap" }}>{displayClassName(item.classes[rowIndex])}</th>{row.map((count, colIndex) => <td key={colIndex} style={{ padding: 7, textAlign: "center", color: "#172033", background: rowIndex === colIndex ? "#e8f5ed" : "#f7f9fc", border: "1px solid #e5eaf1" }}>{count.toLocaleString()}</td>)}</tr>)}</tbody>
           </table></div>
         </details>}
       </article>;
