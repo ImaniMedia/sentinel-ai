@@ -11,6 +11,27 @@ import {
   Settings, Shield, ShieldCheck, SlidersHorizontal, Sparkles, X, Moon, Sun,
 } from "lucide-react";
 
+type DashboardAnalysis = {
+  id: number;
+  created_at: string;
+  filename: string;
+  row_count: number;
+  anomaly_count: number;
+};
+
+type DashboardAlert = {
+  id: number;
+  created_at: string;
+  severity: string;
+  title: string;
+  description: string;
+  flagged_count: number;
+  sample_count: number;
+  status: string;
+};
+
+const API_BASE = (process.env.NEXT_PUBLIC_SENTINEL_API_URL || "http://localhost:8000").replace(/\\/$/, "");
+
 const navigation = [
   { label: "Overview", icon: LayoutDashboard },
   { label: "AI Predictions", icon: BrainCircuit },
@@ -59,6 +80,40 @@ export default function Home() {
   const [active, setActive] = useState("Overview");
   const [menuOpen, setMenuOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [dashboardAnalyses, setDashboardAnalyses] = useState<DashboardAnalysis[]>([]);
+  const [dashboardAlerts, setDashboardAlerts] = useState<DashboardAlert[]>([]);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [dashboardError, setDashboardError] = useState("");
+
+  useEffect(() => {
+    if (active !== "Overview") return;
+    let current = true;
+    setDashboardLoading(true);
+    setDashboardError("");
+    Promise.all([
+      fetch(`${API_BASE}/api/v1/predictions?limit=7`).then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.detail || "Could not load analysis history.");
+        return payload.items as DashboardAnalysis[];
+      }),
+      fetch(`${API_BASE}/api/v1/alerts?status=open&limit=5`).then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.detail || "Could not load threat alerts.");
+        return payload.items as DashboardAlert[];
+      }),
+    ]).then(([analyses, alerts]) => {
+      if (!current) return;
+      setDashboardAnalyses(analyses || []);
+      setDashboardAlerts(alerts || []);
+    }).catch((error: unknown) => {
+      if (!current) return;
+      setDashboardError(error instanceof Error ? error.message : "Dashboard data could not be loaded.");
+    }).finally(() => {
+      if (current) setDashboardLoading(false);
+    });
+    return () => { current = false; };
+  }, [active]);
+
   useEffect(() => {
     const saved = window.localStorage.getItem("sentinel-theme");
     const initial = saved === "dark" ? "dark" : "light";
@@ -123,8 +178,32 @@ export default function Home() {
               <div className="section-heading"><div><h2>Workspace snapshot</h2><p>Results from your analysed datasets</p></div><span className="empty-chip">Awaiting first analysis</span></div>
               <OverviewSnapshot />
               <div className="dashboard-grid">
-                <article className="panel activity-panel"><div className="panel-heading"><div><h2>Traffic analysis</h2><p>Dataset activity over time</p></div><span className="empty-chip">No data yet</span></div><div className="empty-chart"><div className="chart-grid"><span /><span /><span /><span /></div><div className="chart-empty-icon"><Activity size={25} /></div><b>Your analysis timeline will appear here</b><p>Upload a labelled network-flow CSV to get started.</p></div><div className="chart-legend"><span><i className="legend-blue" /> Records analysed</span><span><i className="legend-orange" /> Flagged anomalies</span></div></article>
-                <article className="panel alerts-panel"><div className="panel-heading"><div><h2>Recent threat alerts</h2><p>Items requiring analyst review</p></div><button className="text-button" onClick={() => setActive("Threat Alerts")}>View all <ArrowUpRight size={14} /></button></div><div className="empty-alerts"><div className="empty-icon"><ShieldCheck size={22} /></div><b>No alerts to review</b><p>Alerts will be generated from actual dataset analysis results.</p></div></article>
+                <article className="panel activity-panel">
+                  <div className="panel-heading"><div><h2>Traffic analysis</h2><p>Saved dataset activity over time</p></div><span className="empty-chip">{dashboardLoading ? "Loading…" : dashboardAnalyses.length ? `${dashboardAnalyses.length} recent runs` : "No data yet"}</span></div>
+                  {dashboardError ? <div className="empty-chart"><div className="chart-empty-icon"><Activity size={25} /></div><b>Traffic activity unavailable</b><p>{dashboardError}</p></div> : dashboardLoading ? <div className="empty-chart"><div className="chart-empty-icon"><Activity size={25} /></div><b>Loading analysis history…</b><p>Fetching saved dataset results from Sentinel AI.</p></div> : dashboardAnalyses.length === 0 ? <div className="empty-chart"><div className="chart-grid"><span /><span /><span /><span /></div><div className="chart-empty-icon"><Activity size={25} /></div><b>Your analysis timeline will appear here</b><p>Upload and analyse a labelled network-flow CSV to get started.</p></div> : <div style={{ display: "flex", alignItems: "end", gap: 10, minHeight: 178, padding: "22px 8px 8px", overflowX: "auto" }}>
+                    {[...dashboardAnalyses].reverse().map((item) => {
+                      const maxRows = Math.max(...dashboardAnalyses.map((entry) => entry.row_count), 1);
+                      const barHeight = Math.max(8, (item.row_count / maxRows) * 112);
+                      const anomalyHeight = item.row_count ? Math.max(3, (item.anomaly_count / item.row_count) * barHeight) : 0;
+                      return <div key={item.id} title={`${item.filename}: ${item.row_count.toLocaleString()} records, ${item.anomaly_count.toLocaleString()} anomalies flagged`} style={{ minWidth: 48, flex: "1 0 48px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "end", gap: 7 }}>
+                        <span style={{ fontSize: 10, color: "var(--muted, #8993a5)" }}>{item.row_count.toLocaleString()}</span>
+                        <div style={{ height: barHeight, width: "70%", maxWidth: 34, minHeight: 8, background: "#dbeafe", borderRadius: "5px 5px 0 0", position: "relative", overflow: "hidden" }}><div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: anomalyHeight, background: "#f59e0b" }} /></div>
+                        <span style={{ fontSize: 9, color: "var(--muted, #8993a5)", whiteSpace: "nowrap" }}>{new Date(item.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+                      </div>;
+                    })}
+                  </div>}
+                  <div className="chart-legend"><span><i className="legend-blue" /> Records analysed</span><span><i className="legend-orange" /> Flagged anomalies</span></div>
+                </article>
+                <article className="panel alerts-panel">
+                  <div className="panel-heading"><div><h2>Recent threat alerts</h2><p>Open items requiring analyst review</p></div><button className="text-button" onClick={() => setActive("Threat Alerts")}>View all <ArrowUpRight size={14} /></button></div>
+                  {dashboardError ? <div className="empty-alerts"><div className="empty-icon"><ShieldCheck size={22} /></div><b>Alerts unavailable</b><p>{dashboardError}</p></div> : dashboardLoading ? <div className="empty-alerts"><div className="empty-icon"><ShieldCheck size={22} /></div><b>Loading threat alerts…</b><p>Checking saved alerts from completed analyses.</p></div> : dashboardAlerts.length === 0 ? <div className="empty-alerts"><div className="empty-icon"><ShieldCheck size={22} /></div><b>No alerts to review</b><p>Alerts will appear here when actual dataset analysis flags anomalies for review.</p></div> : <div style={{ display: "grid", gap: 12, padding: "14px 2px" }}>
+                    {dashboardAlerts.slice(0, 3).map((alert) => <div key={alert.id} style={{ borderBottom: "1px solid var(--border, #e9edf3)", paddingBottom: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}><b style={{ fontSize: 12 }}>{alert.title}</b><span className="empty-chip">{alert.severity}</span></div>
+                      <p style={{ fontSize: 11, color: "var(--muted, #8993a5)", lineHeight: 1.5, margin: "6px 0" }}>{alert.description}</p>
+                      <small style={{ color: "var(--muted, #8993a5)" }}>{alert.flagged_count.toLocaleString()} flagged of {alert.sample_count.toLocaleString()} · {new Date(alert.created_at).toLocaleString()}</small>
+                    </div>)}
+                  </div>}
+                </article>
               </div>
               <div className="bottom-grid">
                 <article className="panel quick-panel"><div className="panel-heading"><div><h2>Get started</h2><p>Run your first network traffic analysis</p></div><Sparkles size={18} className="muted-icon" /></div><button className="upload-tile" onClick={() => setActive("Datasets")}><span className="upload-icon"><FileUp size={20} /></span><span><b>Manage datasets</b><small>Inspect and prepare a CSV dataset</small></span><ArrowUpRight size={17} /></button><button className="upload-tile" onClick={() => setActive("Research Lab")}><span className="upload-icon purple"><BrainCircuit size={20} /></span><span><b>Explore model experiments</b><small>Review the ML research pipeline</small></span><ArrowUpRight size={17} /></button></article>
