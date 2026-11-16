@@ -56,7 +56,6 @@ function displayClassName(name: string) {
 function percent(value: number) {
   return `${(value * 100).toFixed(1)}%`;
 }
-}
 
 export default function DatasetWorkbench() {
   const [file, setFile] = useState<File | null>(null);
